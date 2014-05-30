@@ -5,4 +5,5 @@ This repository contains a set of tools and instructions for moving most of the 
 
 Actually the nodejs script export.js allow to export maps.
 The following actors are supported (Brush, StaticMesh, PointLight, SpotLight, PlayerStart)
-Materials/Textures migration is not yet done.
+
+Materials/Textures migration is not yet done and will requires the creation an Unreal Engine 4 plugins
