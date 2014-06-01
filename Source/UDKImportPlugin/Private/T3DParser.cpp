@@ -133,6 +133,31 @@ bool T3DParser::ParseUDKRotation(const FString &InSourceString, FRotator &Rotato
 
 }
 
+bool T3DParser::ParseFVector(const TCHAR* Stream, FVector& Value)
+{
+	Value = FVector::ZeroVector;
+
+	Value.X = FCString::Atof(Stream);
+	Stream = FCString::Strchr(Stream, ',');
+	if (!Stream)
+	{
+		return false;
+	}
+
+	Stream++;
+	Value.Y = FCString::Atof(Stream);
+	Stream = FCString::Strchr(Stream, ',');
+	if (!Stream)
+	{
+		return false;
+	}
+
+	Stream++;
+	Value.Z = FCString::Atof(Stream);
+
+	return true;
+}
+
 bool T3DParser::IsActorLocation(AActor * Actor)
 {
 	FString Value;
@@ -246,45 +271,43 @@ void T3DParser::ImportBrush()
 
 void T3DParser::ImportPolyList(UPolys * Polys)
 {
+	FString Texture;
 	while (NextLine() && !Line.StartsWith(TEXT("End PolyList")))
 	{
 		if (Line.StartsWith(TEXT("Begin Polygon ")))
 		{
 			bool GotBase = false;
 			FPoly Poly;
+			if (GetOneValueAfter(TEXT(" Texture="), Texture))
+			{
+				AddRequirement(Texture, FExecuteAction::CreateRaw(this, &T3DParser::SetPolygonTexture, Polys, Polys->Element.Num()));
+			}
+
 			while (NextLine() && !Line.StartsWith(TEXT("End Polygon")))
 			{
 				const TCHAR* Str = *Line;
 				if (FParse::Command(&Str, TEXT("ORIGIN")))
 				{
 					GotBase = true;
-					GetFVECTOR(Str, Poly.Base);
+					ParseFVector(Str, Poly.Base);
 				}
 				else if (FParse::Command(&Str, TEXT("VERTEX")))
 				{
 					FVector TempVertex;
-					GetFVECTOR(Str, TempVertex);
+					ParseFVector(Str, TempVertex);
 					new(Poly.Vertices) FVector(TempVertex);
 				}
 				else if (FParse::Command(&Str, TEXT("TEXTUREU")))
 				{
-					GetFVECTOR(Str, Poly.TextureU);
+					ParseFVector(Str, Poly.TextureU);
 				}
 				else if (FParse::Command(&Str, TEXT("TEXTUREV")))
 				{
-					GetFVECTOR(Str, Poly.TextureV);
+					ParseFVector(Str, Poly.TextureV);
 				}
 				else if (FParse::Command(&Str, TEXT("NORMAL")))
 				{
-					GetFVECTOR(Str, Poly.Normal);
-				}
-				else if (GetEND(&Str, TEXT("POLYGON")))
-				{
-					if (!GotBase)
-						Poly.Base = Poly.Vertices[0];
-					if (Poly.Finalize(NULL, 1) == 0)
-						new(Polys->Element)FPoly(Poly);
-					GotBase = 0;
+					ParseFVector(Str, Poly.Normal);
 				}
 			}
 			if (!GotBase)
@@ -433,6 +456,11 @@ USoundCue * T3DParser::ImportSoundCue()
 	}
 
 	return SoundCue;
+}
+
+void T3DParser::SetPolygonTexture(UPolys * Polys, int32 index)
+{
+	Polys->Element[index].Material = Cast<UMaterialInterface>(CurrentRequirement);
 }
 
 void T3DParser::SetStaticMesh(UStaticMeshComponent * StaticMeshComponent)

@@ -28,6 +28,7 @@ private:
 	void RegisterObject(const FString &UDKObjectName, UObject * Object);
 	void AddRequirement(const FString &UDKRequiredObjectName, FExecuteAction Action);
 	bool ParseUDKRotation(const FString &InSourceString, FRotator &Rotator);
+	bool ParseFVector(const TCHAR* Stream, FVector& Value);
 	bool IsActorLocation(AActor * Actor);
 	bool IsActorRotation(AActor * Actor);
 	bool IsActorScale(AActor * Actor);
@@ -42,5 +43,6 @@ private:
 	void ImportSpotLight();
 	USoundCue * ImportSoundCue();
 	void SetStaticMesh(UStaticMeshComponent * StaticMeshComponent);
+	void SetPolygonTexture(UPolys * Polys, int32 index);
 	void SetSoundCueFirstNode(USoundCue * SoundCue);
 };
