@@ -287,6 +287,10 @@ void T3DParser::ImportBrush()
 		{
 			continue;
 		}
+		else if (Line.StartsWith(TEXT("Begin "), ESearchCase::CaseSensitive))
+		{
+			JumpToEnd();
+		}
 	}
 }
 
