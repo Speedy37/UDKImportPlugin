@@ -46,7 +46,7 @@ void SUDKImportScreen::Construct(const FArguments& Args)
 FReply SUDKImportScreen::OnRun()
 {
 	const FString TmpPath = STmpPath.Get()->GetText().ToString();
-	const FString CommandLine = FString::Printf(TEXT("batchexport %s T3D %s"), *(SLevel.Get()->GetText().ToString()), *TmpPath);
+	const FString CommandLine = FString::Printf(TEXT("batchexport %s Level T3D %s"), *(SLevel.Get()->GetText().ToString()), *TmpPath);
 
 	if (RunUDK(CommandLine) == 0)
 	{
@@ -64,12 +64,12 @@ FReply SUDKImportScreen::OnRun()
 int32 SUDKImportScreen::RunUDK(const FString &CommandLine)
 {
 	int32 exitCode = -1;
-	FProcHandle ProcessHandle = FGenericPlatformProcess::CreateProc(*(SUDKPath.Get()->GetText().ToString() / TEXT("Binaries/Win32/UDK.exe")), *CommandLine, false, false, false, NULL, 0, NULL, NULL);
+	FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*(SUDKPath.Get()->GetText().ToString() / TEXT("Binaries/Win32/UDK.exe")), *CommandLine, false, false, false, NULL, 0, NULL, NULL);
 
 	if (ProcessHandle.IsValid())
 	{
-		FGenericPlatformProcess::WaitForProc(ProcessHandle);
-		FGenericPlatformProcess::GetProcReturnCode(ProcessHandle, &exitCode);
+		FPlatformProcess::WaitForProc(ProcessHandle);
+		FPlatformProcess::GetProcReturnCode(ProcessHandle, &exitCode);
 	}
 
 	return exitCode;
