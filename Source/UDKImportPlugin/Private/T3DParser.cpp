@@ -13,11 +13,32 @@ T3DParser::T3DParser(const FString &T3DText)
 	T3DText.ParseIntoArray(&Lines, TEXT("\n"), true);
 }
 
+inline bool IsWhitespace(TCHAR c) 
+{ 
+	return c == LITERAL(TCHAR, ' ') || c == LITERAL(TCHAR, '\t') || c == LITERAL(TCHAR, '\r');
+}
+
 bool T3DParser::NextLine()
 {
 	if (LineIndex < Lines.Num())
 	{
-		Line = Lines[LineIndex].Trim().TrimTrailing();
+		int32 Start, End;
+		const FString &String = Lines[LineIndex];
+		Start = 0;
+		End = String.Len();
+
+		// Trimming
+		while (Start < End && IsWhitespace(String[Start]))
+		{
+			++Start;
+		}
+
+		while (End > Start && IsWhitespace(String[End-1]))
+		{
+			--End;
+		}
+
+		Line = String.Mid(Start, End - Start);
 		++LineIndex;
 		return true;
 	}
