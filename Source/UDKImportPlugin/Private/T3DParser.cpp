@@ -367,6 +367,8 @@ void T3DParser::ImportPolyList(UPolys * Polys)
 			{
 				AddRequirement(Texture, FExecuteAction::CreateRaw(this, &T3DParser::SetPolygonTexture, Polys, Polys->Element.Num()));
 			}
+			FParse::Value(*Line, TEXT("LINK="), Poly.iLink);
+			Poly.PolyFlags &= ~PF_NoImport;
 
 			while (NextLine() && !Line.StartsWith(TEXT("End Polygon")))
 			{
@@ -397,7 +399,8 @@ void T3DParser::ImportPolyList(UPolys * Polys)
 			}
 			if (!GotBase)
 				Poly.Base = Poly.Vertices[0];
-			new(Polys->Element)FPoly(Poly);
+			if (Poly.Finalize(NULL, 1) == 0)
+				new(Polys->Element)FPoly(Poly);
 		}
 	}
 }
