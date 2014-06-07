@@ -10,9 +10,12 @@ namespace UnrealBuildTool.Rules
 			PublicDependencyModuleNames.AddRange(
 				new string[] {
 					"Core",
+					"Engine",
+					"UnrealEd",
 					"CoreUObject",		// @todo Mac: for some reason CoreUObject and Engine are needed to link in debug on Mac
                     "InputCore",
 					"Engine",
+					"SlateCore",
 					"Slate"
 				}
 			);
@@ -21,7 +24,6 @@ namespace UnrealBuildTool.Rules
 				new string[] {
 					"EditorStyle",
 					"Projects",
-					"UnrealEd",
 					"LevelEditor",
 					"AssetTools",
 				}
