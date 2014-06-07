@@ -14,6 +14,7 @@ private:
 	FString Line;
 
 	int32 LineIndex, ParserLevel;
+	TMap<FString, FExecuteAction> Requirements;
 	UObject * CurrentRequirement;
 	UWorld * World;
 
@@ -25,7 +26,6 @@ private:
 	bool IsEndObject();
 	bool GetOneValueAfter(const FString &Key, FString &Value);
 	bool GetProperty(const FString &Key, FString &Value);
-	void RegisterObject(const FString &UDKObjectName, UObject * Object);
 	void AddRequirement(const FString &UDKRequiredObjectName, FExecuteAction Action);
 	bool ParseUDKRotation(const FString &InSourceString, FRotator &Rotator);
 	bool ParseFVector(const TCHAR* Stream, FVector& Value);

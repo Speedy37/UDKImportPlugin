@@ -129,14 +129,9 @@ bool T3DParser::GetProperty(const FString &Key, FString &Value)
 	return false;
 }
 
-void T3DParser::RegisterObject(const FString &UDKObjectName, UObject * Object)
-{
-
-}
-
 void T3DParser::AddRequirement(const FString &UDKRequiredObjectName, FExecuteAction Action)
 {
-
+	Requirements.Add(UDKRequiredObjectName, Action);
 }
 
 bool T3DParser::ParseUDKRotation(const FString &InSourceString, FRotator &Rotator)
