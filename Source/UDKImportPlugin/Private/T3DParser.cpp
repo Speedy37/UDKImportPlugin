@@ -1,5 +1,6 @@
 #include "UDKImportPluginPrivatePCH.h"
 #include "T3DParser.h"
+#include "Editor/UnrealEd/Public/BSPOps.h"
 
 float T3DParser::UnrRotToDeg = 0.00549316540360483;
 float T3DParser::IntensityMultiplier = 5000;
@@ -281,11 +282,11 @@ void T3DParser::ImportBrush()
 			{
 				if (Line.StartsWith(TEXT("Begin PolyList")))
 				{
-					ImportPolyList(Brush->Brush->Polys);
+					ImportPolyList(Model->Polys);
 				}
 			}
 		}
-		else if (GetProperty(TEXT("CsgOper"), Value))
+		else if (GetProperty(TEXT("CsgOper="), Value))
 		{
 			if (Value.Equals(TEXT("CSG_Subtract")))
 			{
@@ -301,6 +302,56 @@ void T3DParser::ImportBrush()
 			JumpToEnd();
 		}
 	}
+	
+	Model->Modify();
+	if (!Model->Linked)
+	{
+		Model->Linked = 1;
+		for (int32 i = 0; i<Model->Polys->Element.Num(); i++)
+		{
+			Model->Polys->Element[i].iLink = i;
+		}
+		int32 n = 0;
+		for (int32 i = 0; i<Model->Polys->Element.Num(); i++)
+		{
+			FPoly* EdPoly = &Model->Polys->Element[i];
+			if (EdPoly->iLink == i)
+			{
+				for (int32 j = i + 1; j<Model->Polys->Element.Num(); j++)
+				{
+					FPoly* OtherPoly = &Model->Polys->Element[j];
+					if
+						(OtherPoly->iLink == j
+						&&	OtherPoly->Material == EdPoly->Material
+						&&	OtherPoly->TextureU == EdPoly->TextureU
+						&&	OtherPoly->TextureV == EdPoly->TextureV
+						&&	OtherPoly->PolyFlags == EdPoly->PolyFlags
+						&& (OtherPoly->Normal | EdPoly->Normal)>0.9999)
+					{
+						float Dist = FVector::PointPlaneDist(OtherPoly->Vertices[0], EdPoly->Vertices[0], EdPoly->Normal);
+						if (Dist>-0.001 && Dist<0.001)
+						{
+							OtherPoly->iLink = i;
+							n++;
+						}
+					}
+				}
+			}
+		}
+		// 		UE_LOG(LogBSPOps, Log,  TEXT("BspValidateBrush linked %i of %i polys"), n, Brush->Polys->Element.Num() );
+	}
+
+	// Build bounds.
+	Model->BuildBound();
+
+	Brush->BrushComponent->Brush = Brush->Brush;
+
+	// Let the actor deal with having been imported, if desired.
+	Brush->PostEditImport();
+	// Notify actor its properties have changed.
+	Brush->PostEditChange();
+	Brush->SetFlags(RF_Standalone | RF_Public);
+
 }
 
 void T3DParser::ImportPolyList(UPolys * Polys)
