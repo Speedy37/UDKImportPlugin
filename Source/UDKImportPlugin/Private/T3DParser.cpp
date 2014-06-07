@@ -270,6 +270,8 @@ void T3DParser::ImportBrush()
 {
 	FString Value, Class, Name;
 	ABrush * Brush = SpawnActor<ABrush>();
+	Brush->BrushType = Brush_Add;
+	UModel* Model = new(Brush, NAME_None, RF_Transactional)UModel(FPostConstructInitializeProperties(), Brush, 1);
 
 	while (NextLine() && !IsEndObject())
 	{
@@ -281,6 +283,13 @@ void T3DParser::ImportBrush()
 				{
 					ImportPolyList(Brush->Brush->Polys);
 				}
+			}
+		}
+		else if (GetProperty(TEXT("CsgOper"), Value))
+		{
+			if (Value.Equals(TEXT("CSG_Subtract")))
+			{
+				Brush->BrushType = Brush_Subtract;
 			}
 		}
 		else if (IsActorLocation(Brush))
