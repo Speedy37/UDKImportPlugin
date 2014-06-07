@@ -448,6 +448,8 @@ void T3DParser::ImportPointLight()
 
 void T3DParser::ImportSpotLight()
 {
+	FVector DrawScale3D(1.0,1.0,1.0);
+	FRotator Rotator(0.0, 0.0, 0.0);
 	FString Value, Class, Name;
 	ASpotLight* SpotLight = SpawnActor<ASpotLight>();
 
@@ -488,11 +490,22 @@ void T3DParser::ImportSpotLight()
 				JumpToEnd();
 			}
 		}
-		else if (IsActorLocation(SpotLight) || IsActorRotation(SpotLight))
+		else if (IsActorLocation(SpotLight))
 		{
 			continue;
 		}
+		else if (GetProperty(TEXT("Rotation="), Value))
+		{
+			ensure(ParseUDKRotation(Value, Rotator));
+		}
+		else if (GetProperty(TEXT("DrawScale3D="), Value))
+		{
+			ensure(DrawScale3D.InitFromString(Value));
+		}
 	}
+
+	// Because there is people that does this in UDK...
+	SpotLight->SetActorRotation((DrawScale3D.X * Rotator.Vector()).Rotation());
 }
 
 void T3DParser::ImportStaticMeshActor()
