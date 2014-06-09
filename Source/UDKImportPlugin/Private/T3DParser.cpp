@@ -132,18 +132,46 @@ bool T3DParser::GetProperty(const FString &Key, FString &Value)
 
 void T3DParser::AddRequirement(const FString &UDKRequiredObjectName, FExecuteAction Action)
 {
-	TArray<FExecuteAction> * pActions = Requirements.Find(UDKRequiredObjectName);
-	if (pActions != NULL)
+	UObject ** pObject = FixedRequirements.Find(UDKRequiredObjectName);
+	if (pObject != NULL)
 	{
-		pActions->Add(Action);
+		CurrentRequirement = *pObject;
+		Action.ExecuteIfBound();
 	}
 	else
 	{
-		TArray<FExecuteAction> Actions;
-		Actions.Add(Action);
-		Requirements.Add(UDKRequiredObjectName, Actions);
+		TArray<FExecuteAction> * pActions = Requirements.Find(UDKRequiredObjectName);
+		if (pActions != NULL)
+		{
+			pActions->Add(Action);
+		}
+		else
+		{
+			TArray<FExecuteAction> Actions;
+			Actions.Add(Action);
+			Requirements.Add(UDKRequiredObjectName, Actions);
+		}
+	}
+}
+
+
+void T3DParser::FixRequirement(const FString &UDKRequiredObjectName, UObject * Object)
+{
+	if (Object == NULL)
+		return;
+	
+	TArray<FExecuteAction> * pActions = Requirements.Find(UDKRequiredObjectName);
+	if (pActions != NULL)
+	{
+		CurrentRequirement = Object;
+		for (auto IterActions = pActions->CreateConstIterator(); IterActions; ++IterActions)
+		{
+			IterActions->ExecuteIfBound();
+		}
+		pActions->Empty();
 	}
 
+	FixedRequirements.Add(UDKRequiredObjectName, Object);
 }
 
 bool T3DParser::ParseUDKRotation(const FString &InSourceString, FRotator &Rotator)
@@ -412,18 +440,7 @@ void T3DParser::ResolveRequirements()
 		if (Type == TEXT("StaticMesh"))
 		{
 			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/Meshes/%s/%s.%s"), *PackageName, *Name, *Name);
-			CurrentRequirement = FindObject<UStaticMesh>(NULL, *ObjectPath);
-			if (CurrentRequirement != NULL)
-			{
-				for (auto IterActions = Iter.Value().CreateConstIterator(); IterActions && Continue; ++IterActions)
-				{
-					IterActions->ExecuteIfBound();
-				}
-			}
-			else
-			{
-				CurrentRequirement = NULL;
-			}
+			FixRequirement(Url, FindObject<UStaticMesh>(NULL, *ObjectPath));
 		}
 	}
 }

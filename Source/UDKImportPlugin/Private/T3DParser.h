@@ -17,9 +17,11 @@ private:
 
 	/// Ressources requirements
 	TMap<FString, TArray<FExecuteAction>> Requirements;
+	TMap<FString, UObject*> FixedRequirements;
 	UObject * CurrentRequirement;
 	bool ConvertOBJToFBX(const FString &ObjFileName, const FString &FBXFilename);
 	void AddRequirement(const FString &UDKRequiredObjectName, FExecuteAction Action);
+	void FixRequirement(const FString &UDKRequiredObjectName, UObject * Object);
 	void ResolveRequirements();
 
 	/// Line parsing
