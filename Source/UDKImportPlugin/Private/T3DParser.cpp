@@ -327,12 +327,22 @@ void T3DParser::ImportLevel(const FString &Level)
 
 int32 T3DParser::RunUDK(const FString &CommandLine)
 {
+	FString Output;
+	return RunUDK(CommandLine, Output);
+}
+
+int32 T3DParser::RunUDK(const FString &CommandLine, FString &Output)
+{
 	int32 exitCode = -1;
-	FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*(UdkPath / TEXT("Binaries/Win32/UDK.com")), *CommandLine, false, false, false, NULL, 0, NULL, NULL);
+	void* WritePipe;
+	void* ReadPipe;
+	FPlatformProcess::CreatePipe(ReadPipe, WritePipe);
+	FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*(UdkPath / TEXT("Binaries/Win32/UDK.com")), *CommandLine, false, false, false, NULL, 0, NULL, WritePipe);
 
 	if (ProcessHandle.IsValid())
 	{
 		FPlatformProcess::WaitForProc(ProcessHandle);
+		Output = FPlatformProcess::ReadPipe(ReadPipe);
 		FPlatformProcess::GetProcReturnCode(ProcessHandle, &exitCode);
 	}
 

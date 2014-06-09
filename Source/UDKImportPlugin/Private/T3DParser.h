@@ -14,6 +14,7 @@ private:
 	/// UDK
 	FString UdkPath, TmpPath;
 	int32 RunUDK(const FString &CommandLine);
+	int32 RunUDK(const FString &CommandLine, FString &output);
 
 	/// Ressources requirements
 	TMap<FString, TArray<FExecuteAction>> Requirements;
