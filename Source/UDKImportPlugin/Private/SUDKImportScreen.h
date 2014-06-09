@@ -16,12 +16,6 @@ class SUDKImportScreen : public SCompoundWidget
 	/** Run the import tool */
 	FReply OnRun();
 
-	/** Import an UDK material from its T3D description*/
-	void ImportMaterial(const FString &UdkMaterialT3D);
-
-	/** Run an UDK command and returns the command exitcode */
-	int32 SUDKImportScreen::RunUDK(const FString &CommandLine);
-
 	/** Path to the UDK directory (ex: "C:/UDK/UDK-2014-02") */
 	TSharedPtr<SEditableText> SUDKPath;
 

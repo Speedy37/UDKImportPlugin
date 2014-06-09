@@ -3,22 +3,28 @@
 struct T3DParser
 {
 public:
-	T3DParser(const FString &T3DText);
-	void ImportLevel();
+	T3DParser(const FString &UdkPath, const FString &TmpPath);
+	void ImportLevel(const FString &Level);
 
 private:
 	static float UnrRotToDeg;
 	static float IntensityMultiplier;
 
+	/// UDK
+	FString UdkPath, TmpPath;
+	int32 RunUDK(const FString &CommandLine);
+
 	/// Ressources requirements
-	TMap<FString, FExecuteAction> Requirements;
+	TMap<FString, TArray<FExecuteAction>> Requirements;
 	UObject * CurrentRequirement;
+	bool ConvertOBJToFBX(const FString &ObjFileName, const FString &FBXFilename);
 	void AddRequirement(const FString &UDKRequiredObjectName, FExecuteAction Action);
+	void ResolveRequirements();
 
 	/// Line parsing
 	int32 LineIndex, ParserLevel;
 	TArray<FString> Lines;
-	FString Line;
+	FString Line, Package;
 	bool NextLine();
 	bool IgnoreSubs();
 	bool IgnoreSubObjects();
@@ -36,6 +42,7 @@ private:
 	bool GetProperty(const FString &Key, FString &Value);
 	bool ParseUDKRotation(const FString &InSourceString, FRotator &Rotator);
 	bool ParseFVector(const TCHAR* Stream, FVector& Value);
+	bool ParseRessourceUrl(const FString &Url, FString &Type, FString &Package, FString &Name);
 
 	/// Actor creation
 	UWorld * World;

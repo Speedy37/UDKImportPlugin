@@ -5,13 +5,12 @@
 float T3DParser::UnrRotToDeg = 0.00549316540360483;
 float T3DParser::IntensityMultiplier = 5000;
 
-T3DParser::T3DParser(const FString &T3DText)
+T3DParser::T3DParser(const FString &UdkPath, const FString &TmpPath)
 {
-	CurrentRequirement = NULL;
-	World = NULL;
-	LineIndex = 0;
-	ParserLevel = 0;
-	T3DText.ParseIntoArray(&Lines, TEXT("\n"), true);
+	this->CurrentRequirement = NULL;
+	this->World = NULL;
+	this->UdkPath = UdkPath;
+	this->TmpPath = TmpPath;
 }
 
 inline bool IsWhitespace(TCHAR c) 
@@ -131,7 +130,18 @@ bool T3DParser::GetProperty(const FString &Key, FString &Value)
 
 void T3DParser::AddRequirement(const FString &UDKRequiredObjectName, FExecuteAction Action)
 {
-	Requirements.Add(UDKRequiredObjectName, Action);
+	TArray<FExecuteAction> * pActions = Requirements.Find(UDKRequiredObjectName);
+	if (pActions != NULL)
+	{
+		pActions->Add(Action);
+	}
+	else
+	{
+		TArray<FExecuteAction> Actions;
+		Actions.Add(Action);
+		Requirements.Add(UDKRequiredObjectName, Actions);
+	}
+
 }
 
 bool T3DParser::ParseUDKRotation(const FString &InSourceString, FRotator &Rotator)
@@ -236,9 +246,22 @@ T * T3DParser::SpawnActor()
 	return World->SpawnActor<T>();
 }
 
-void T3DParser::ImportLevel()
+void T3DParser::ImportLevel(const FString &Level)
 {
-	FString Class, Name;
+	FString Class, Name, UdkLevelT3D;
+	const FString CommandLine = FString::Printf(TEXT("batchexport %s Level T3D %s"), *Level, *TmpPath);
+
+	if (0 && RunUDK(CommandLine) != 0)
+		return;
+
+	if (!FFileHelper::LoadFileToString(UdkLevelT3D, *(TmpPath / TEXT("PersistentLevel.T3D"))))
+		return;
+
+	LineIndex = 0;
+	ParserLevel = 0;
+	Package = Level;
+	UdkLevelT3D.ParseIntoArray(&Lines, TEXT("\n"), true);
+	UdkLevelT3D.Empty();
 
 	ensure(NextLine());
 	ensure(Line.Equals(TEXT("Begin Object Class=Level Name=PersistentLevel")));
@@ -258,6 +281,139 @@ void T3DParser::ImportLevel()
 				ImportSpotLight();
 			else
 				JumpToEnd();
+		}
+	}
+
+	ResolveRequirements();
+}
+
+int32 T3DParser::RunUDK(const FString &CommandLine)
+{
+	int32 exitCode = -1;
+	FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*(UdkPath / TEXT("Binaries/Win32/UDK.com")), *CommandLine, false, false, false, NULL, 0, NULL, NULL);
+
+	if (ProcessHandle.IsValid())
+	{
+		FPlatformProcess::WaitForProc(ProcessHandle);
+		FPlatformProcess::GetProcReturnCode(ProcessHandle, &exitCode);
+	}
+
+	return exitCode;
+}
+
+bool T3DParser::ConvertOBJToFBX(const FString &ObjFileName, const FString &FBXFilename)
+{
+	int32 exitCode = -1;
+	FString CommandLine = FString::Printf(TEXT("\"%s\" \"%s\""), *ObjFileName, *FBXFilename);
+
+	FProcHandle ProcessHandle = FPlatformProcess::CreateProc(TEXT("C:\\Program Files (x86)\\Autodesk\\FBX\\FBX Converter\\2013.3\\bin\\FbxConverter.exe"), *CommandLine, false, true, true, NULL, 0, NULL, NULL);
+	if (ProcessHandle.IsValid())
+	{
+		FPlatformProcess::WaitForProc(ProcessHandle);
+		if (FPlatformProcess::GetProcReturnCode(ProcessHandle, &exitCode) && exitCode == 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool T3DParser::ParseRessourceUrl(const FString &Url, FString &Type, FString &Package, FString &Name)
+{
+	int32 Index, PackageIndex, NameIndex;
+
+	if (!Url.FindChar('\'', Index) || !Url.EndsWith(TEXT("'")))
+		return false;
+
+	Type = Url.Mid(0, Index);
+	++Index;
+	PackageIndex = Url.Find(".", ESearchCase::CaseSensitive, ESearchDir::FromStart, Index);
+
+	if (PackageIndex == -1)
+	{
+		// Package Name is the current Package
+		Package = this->Package;
+		Name = Url.Mid(Index, Url.Len() - Index - 1);
+	}
+	else
+	{
+		Package = Url.Mid(Index, PackageIndex - Index);
+		NameIndex = Url.Find(".", ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+		Name = Url.Mid(NameIndex + 1, Url.Len() - NameIndex - 2);
+	}
+
+	return true;
+}
+
+void T3DParser::ResolveRequirements()
+{
+	bool Continue = true;
+	TSet<FString> ExportedOBJStaticMeshPackages;
+	TArray<FString> StaticMeshFiles;
+	FAssetToolsModule& AssetToolsModule = FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools");
+	IFileManager & FileManager = IFileManager::Get();
+	FString Url, Type, PackageName, Name, ExportFolder, ImportFolder, FileName;
+
+	// Export from UDK
+	for (auto Iter = Requirements.CreateConstIterator(); Iter && Continue; ++Iter)
+	{
+		Url = Iter.Key();
+		ParseRessourceUrl(Url, Type, PackageName, Name);
+
+		if (Type == TEXT("StaticMesh"))
+		{
+			ExportFolder = TmpPath / TEXT("ExportedMeshes") / PackageName;
+			ImportFolder = TmpPath / TEXT("Meshes") / PackageName;
+			FileName = Name + ".OBJ";
+			
+			if (!ExportedOBJStaticMeshPackages.Contains(PackageName))
+			{
+				if (FileManager.DirectoryExists(*ExportFolder)
+					|| RunUDK(FString::Printf(TEXT("batchexport %s StaticMesh OBJ %s"), *PackageName, *ExportFolder)) == 0)
+				{
+					ExportedOBJStaticMeshPackages.Add(PackageName);
+				}
+			}
+
+			if (FileManager.FileSize(*(ExportFolder / FileName)) > 0)
+			{
+				if (FileManager.MakeDirectory(*ImportFolder, true))
+				{
+					if (FileManager.FileSize(*(ImportFolder / Name + ".FBX")) == INDEX_NONE)
+					{
+						ConvertOBJToFBX(ExportFolder / FileName, ImportFolder / Name + ".FBX");
+					}
+				}
+			}
+		}
+	}
+
+	// Import
+	StaticMeshFiles.Add(TmpPath / TEXT("Meshes"));
+	AssetToolsModule.Get().ImportAssets(StaticMeshFiles, TEXT("/Game/UDK"));
+	
+	// Link back to imported actors / assets
+	for (auto Iter = Requirements.CreateConstIterator(); Iter && Continue; ++Iter)
+	{
+		Url = Iter.Key();
+		ParseRessourceUrl(Url, Type, PackageName, Name);
+
+		if (Type == TEXT("StaticMesh"))
+		{
+			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/Meshes/%s/%s.%s"), *PackageName, *Name, *Name);
+			CurrentRequirement = FindObject<UStaticMesh>(NULL, *ObjectPath);
+			if (CurrentRequirement != NULL)
+			{
+				for (auto IterActions = Iter.Value().CreateConstIterator(); IterActions && Continue; ++IterActions)
+				{
+					IterActions->ExecuteIfBound();
+				}
+			}
+			else
+			{
+				CurrentRequirement = NULL;
+			}
 		}
 	}
 }
@@ -333,7 +489,6 @@ void T3DParser::ImportBrush()
 				}
 			}
 		}
-		// 		UE_LOG(LogBSPOps, Log,  TEXT("BspValidateBrush linked %i of %i polys"), n, Brush->Polys->Element.Num() );
 	}
 
 	// Build bounds.
@@ -360,7 +515,7 @@ void T3DParser::ImportPolyList(UPolys * Polys)
 			FPoly Poly;
 			if (GetOneValueAfter(TEXT(" Texture="), Texture))
 			{
-				AddRequirement(Texture, FExecuteAction::CreateRaw(this, &T3DParser::SetPolygonTexture, Polys, Polys->Element.Num()));
+				AddRequirement(FString::Printf(TEXT("Material'%s'"), *Texture), FExecuteAction::CreateRaw(this, &T3DParser::SetPolygonTexture, Polys, Polys->Element.Num()));
 			}
 			FParse::Value(*Line, TEXT("LINK="), Poly.iLink);
 			Poly.PolyFlags &= ~PF_NoImport;
@@ -561,7 +716,13 @@ void T3DParser::SetPolygonTexture(UPolys * Polys, int32 index)
 
 void T3DParser::SetStaticMesh(UStaticMeshComponent * StaticMeshComponent)
 {
-	StaticMeshComponent->SetStaticMesh(Cast<UStaticMesh>(CurrentRequirement));
+	UProperty* ChangedProperty = FindField<UProperty>(UStaticMeshComponent::StaticClass(), "StaticMesh");
+	UStaticMesh * StaticMesh = Cast<UStaticMesh>(CurrentRequirement);
+
+	StaticMeshComponent->PreEditChange(ChangedProperty);
+	StaticMeshComponent->StaticMesh = StaticMesh;
+	FPropertyChangedEvent PropertyChangedEvent(ChangedProperty);
+	StaticMeshComponent->PostEditChangeProperty(PropertyChangedEvent);
 }
 
 void T3DParser::SetSoundCueFirstNode(USoundCue * SoundCue)

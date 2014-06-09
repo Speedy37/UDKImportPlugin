@@ -45,61 +45,12 @@ void SUDKImportScreen::Construct(const FArguments& Args)
 
 FReply SUDKImportScreen::OnRun()
 {
+	const FString UdkPath = SUDKPath.Get()->GetText().ToString();
 	const FString TmpPath = STmpPath.Get()->GetText().ToString();
-	const FString CommandLine = FString::Printf(TEXT("batchexport %s Level T3D %s"), *(SLevel.Get()->GetText().ToString()), *TmpPath);
+	const FString Level = SLevel.Get()->GetText().ToString();
 
-	if (RunUDK(CommandLine) == 0)
-	{
-		FString UdkLevelT3D;
-		if (FFileHelper::LoadFileToString(UdkLevelT3D, *(TmpPath / TEXT("PersistentLevel.T3D"))))
-		{
-			T3DParser parser = UdkLevelT3D;
-			parser.ImportLevel();
-		}
-	}
+	T3DParser parser(UdkPath, TmpPath);
+	parser.ImportLevel(Level);
 
 	return FReply::Handled();
-}
-
-int32 SUDKImportScreen::RunUDK(const FString &CommandLine)
-{
-	int32 exitCode = -1;
-	FProcHandle ProcessHandle = FPlatformProcess::CreateProc(*(SUDKPath.Get()->GetText().ToString() / TEXT("Binaries/Win32/UDK.exe")), *CommandLine, false, false, false, NULL, 0, NULL, NULL);
-
-	if (ProcessHandle.IsValid())
-	{
-		FPlatformProcess::WaitForProc(ProcessHandle);
-		FPlatformProcess::GetProcReturnCode(ProcessHandle, &exitCode);
-	}
-
-	return exitCode;
-}
-
-void SUDKImportScreen::ImportMaterial(const FString &UdkMaterialT3D)
-{
-	FString MaterialFullName = TEXT("Test");
-	FString BasePackageName = TEXT("/Game/UDKImport");
-	FString ObjectPath = BasePackageName + TEXT(".") + MaterialFullName;
-	
-	UMaterial* Material = LoadObject<UMaterial>(NULL, *ObjectPath);
-	if (Material == NULL)
-	{
-		// create an unreal material asset
-		UMaterialFactoryNew* MaterialFactory = ConstructObject<UMaterialFactoryNew>(UMaterialFactoryNew::StaticClass());
-
-		const FString Suffix(TEXT(""));
-		FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
-		FString FinalPackageName;
-		AssetToolsModule.Get().CreateUniqueAssetName(BasePackageName, Suffix, FinalPackageName, MaterialFullName);
-
-		Material = (UMaterial*)AssetToolsModule.Get().CreateAsset(MaterialFullName, FinalPackageName, UMaterial::StaticClass(), MaterialFactory);
-	}
-	
-	UMaterialExpressionComment *Comment = ConstructObject<UMaterialExpressionComment>(UMaterialExpressionComment::StaticClass(), Material, NAME_None, RF_Transactional);
-	Comment->SizeX = 836;
-	Comment->SizeY = 474;
-	Comment->MaterialExpressionEditorX = 0;
-	Comment->MaterialExpressionEditorY = 0;
-	Comment->Text = TEXT("Test");
-	Material->EditorComments.Add(Comment);
 }
