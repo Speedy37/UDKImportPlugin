@@ -1,14 +1,14 @@
 {
     "FileVersion" : 3,
 	
-	"FriendlyName" : "UObject Example Plugin",
+	"FriendlyName" : "UDK Import Plugin",
 	"Version" : 1,
 	"VersionName" : "1.0",
-	"CreatedBy" : "Epic Games, Inc.",
-	"CreatedByURL" : "http://epicgames.com",
+	"CreatedBy" : "Vincent (Speedy37) Rouille",
+	"CreatedByURL" : "http://speedy37.fr",
 	"EngineVersion" : 1579795,
-	"Description" : "An example of a plugin which declares its own UObject type.  This can be used as a starting point when creating your own plugin.",
-	"Category" : "Examples",
+	"Description" : "Automatic importation of Map and related assets from UDK.",
+	"Category" : "Import",
 	
     "Modules" :
 	[
