@@ -375,7 +375,7 @@ void T3DParser::ResolveRequirements()
 		{
 			ExportFolder = TmpPath / TEXT("ExportedMeshes") / PackageName;
 			ImportFolder = TmpPath / TEXT("Meshes") / PackageName;
-			FileName = Name + ".OBJ";
+			FileName = Name + TEXT(".OBJ");
 			
 			if (!ExportedOBJStaticMeshPackages.Contains(PackageName))
 			{
@@ -390,9 +390,9 @@ void T3DParser::ResolveRequirements()
 			{
 				if (FileManager.MakeDirectory(*ImportFolder, true))
 				{
-					if (FileManager.FileSize(*(ImportFolder / Name + ".FBX")) == INDEX_NONE)
+					if (FileManager.FileSize(*(ImportFolder / Name + TEXT(".FBX"))) == INDEX_NONE)
 					{
-						ConvertOBJToFBX(ExportFolder / FileName, ImportFolder / Name + ".FBX");
+						ConvertOBJToFBX(ExportFolder / FileName, ImportFolder / Name + TEXT(".FBX"));
 					}
 				}
 			}
