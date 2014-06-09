@@ -2,6 +2,8 @@
 #include "T3DParser.h"
 #include "Editor/UnrealEd/Public/BSPOps.h"
 
+#define LOCTEXT_NAMESPACE "UDKImportPlugin"
+
 float T3DParser::UnrRotToDeg = 0.00549316540360483;
 float T3DParser::IntensityMultiplier = 5000;
 
@@ -251,12 +253,19 @@ void T3DParser::ImportLevel(const FString &Level)
 	FString Class, Name, UdkLevelT3D;
 	const FString CommandLine = FString::Printf(TEXT("batchexport %s Level T3D %s"), *Level, *TmpPath);
 
+	StatusNumerator = 0;
+	StatusDenominator = 6;
+	GWarn->BeginSlowTask(LOCTEXT("StatusBegin", "Importing requested level"), true, false);
+	
+	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ExportUDKLevelT3D", "Exporting UDK Level informations"));
 	if (0 && RunUDK(CommandLine) != 0)
 		return;
 
+	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("LoadUDKLevelT3D", "Loading UDK Level informations"));
 	if (!FFileHelper::LoadFileToString(UdkLevelT3D, *(TmpPath / TEXT("PersistentLevel.T3D"))))
 		return;
 
+	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ParsingUDKLevelT3D", "Parsing UDK Level informations"));
 	LineIndex = 0;
 	ParserLevel = 0;
 	Package = Level;
@@ -285,6 +294,7 @@ void T3DParser::ImportLevel(const FString &Level)
 	}
 
 	ResolveRequirements();
+	GWarn->EndSlowTask();
 }
 
 int32 T3DParser::RunUDK(const FString &CommandLine)
@@ -355,7 +365,7 @@ void T3DParser::ResolveRequirements()
 	IFileManager & FileManager = IFileManager::Get();
 	FString Url, Type, PackageName, Name, ExportFolder, ImportFolder, FileName;
 
-	// Export from UDK
+	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ExportUDKAssets", "Exporting UDK Assets"));
 	for (auto Iter = Requirements.CreateConstIterator(); Iter && Continue; ++Iter)
 	{
 		Url = Iter.Key();
@@ -389,11 +399,11 @@ void T3DParser::ResolveRequirements()
 		}
 	}
 
-	// Import
+	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ImportStaticMesh", "Importing Meshes"));
 	StaticMeshFiles.Add(TmpPath / TEXT("Meshes"));
 	AssetToolsModule.Get().ImportAssets(StaticMeshFiles, TEXT("/Game/UDK"));
 	
-	// Link back to imported actors / assets
+	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ResolvingLinks", "Updating actors assets"));
 	for (auto Iter = Requirements.CreateConstIterator(); Iter && Continue; ++Iter)
 	{
 		Url = Iter.Key();

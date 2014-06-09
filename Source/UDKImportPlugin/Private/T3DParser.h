@@ -9,6 +9,7 @@ public:
 private:
 	static float UnrRotToDeg;
 	static float IntensityMultiplier;
+	int32 StatusNumerator, StatusDenominator;
 
 	/// UDK
 	FString UdkPath, TmpPath;
