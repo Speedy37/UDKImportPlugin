@@ -1,14 +1,18 @@
 #pragma once
 
-struct T3DParser
-{
-public:
-	T3DParser(const FString &UdkPath, const FString &TmpPath);
-	void ImportLevel(const FString &Level);
+#define LOCTEXT_NAMESPACE "UDKImportPlugin"
 
-private:
+DECLARE_DELEGATE_OneParam(UObjectDelegate, UObject*);
+
+class T3DParser
+{
+protected:
 	static float UnrRotToDeg;
 	static float IntensityMultiplier;
+
+	T3DParser(const FString &UdkPath, const FString &TmpPath);
+	T3DParser(T3DParser * ParentParser);
+
 	int32 StatusNumerator, StatusDenominator;
 
 	/// UDK
@@ -17,26 +21,27 @@ private:
 	int32 RunUDK(const FString &CommandLine, FString &output);
 
 	/// Ressources requirements
-	TMap<FString, TArray<FExecuteAction>> Requirements;
+	TMap<FString, TArray<UObjectDelegate>> Requirements;
 	TMap<FString, UObject*> FixedRequirements;
-	UObject * CurrentRequirement;
 	bool ConvertOBJToFBX(const FString &ObjFileName, const FString &FBXFilename);
-	void AddRequirement(const FString &UDKRequiredObjectName, FExecuteAction Action);
+	void AddRequirement(const FString &UDKRequiredObjectName, UObjectDelegate Action);
 	void FixRequirement(const FString &UDKRequiredObjectName, UObject * Object);
-	void ResolveRequirements();
+	bool FindRequirement(const FString &UDKRequiredObjectName, UObject * &Object);
 
 	/// Line parsing
 	int32 LineIndex, ParserLevel;
 	TArray<FString> Lines;
 	FString Line, Package;
+	void ResetParser(const FString &Content);
 	bool NextLine();
 	bool IgnoreSubs();
 	bool IgnoreSubObjects();
 	void JumpToEnd();
 
 	/// Line content parsing
-	bool IsBeginObject(FString &Class, FString &Name);
+	bool IsBeginObject(FString &Class);
 	bool IsEndObject();
+	bool IsProperty(FString &PropertyName, FString &Value);
 	bool IsActorLocation(AActor * Actor);
 	bool IsActorRotation(AActor * Actor);
 	bool IsActorScale(AActor * Actor);
@@ -47,22 +52,4 @@ private:
 	bool ParseUDKRotation(const FString &InSourceString, FRotator &Rotator);
 	bool ParseFVector(const TCHAR* Stream, FVector& Value);
 	bool ParseRessourceUrl(const FString &Url, FString &Type, FString &Package, FString &Name);
-
-	/// Actor creation
-	UWorld * World;
-	template<class T>
-	T * SpawnActor();
-
-	/// Actor Importation
-	void ImportBrush();
-	void ImportPolyList(UPolys * Polys);
-	void ImportStaticMeshActor();
-	void ImportPointLight();
-	void ImportSpotLight();
-	USoundCue * ImportSoundCue();
-
-	/// Available ressource actions
-	void SetStaticMesh(UStaticMeshComponent * StaticMeshComponent);
-	void SetPolygonTexture(UPolys * Polys, int32 index);
-	void SetSoundCueFirstNode(USoundCue * SoundCue);
 };

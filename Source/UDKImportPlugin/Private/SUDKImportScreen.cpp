@@ -1,6 +1,6 @@
 #include "UDKImportPluginPrivatePCH.h"
 #include "SUDKImportScreen.h"
-#include "T3DParser.h"
+#include "T3DLevelParser.h"
 
 #define LOCTEXT_NAMESPACE "UDKImportScreen"
 
@@ -8,9 +8,9 @@ DEFINE_LOG_CATEGORY(LogUDKImportPlugin);
 
 void SUDKImportScreen::Construct(const FArguments& Args)
 {
-	SUDKPath = SNew(SEditableText);
-	SLevel = SNew(SEditableText);
-	STmpPath = SNew(SEditableText);
+	SUDKPath = SNew(SEditableText).Text(FText::FromString(TEXT("F:/Development/ue3")));
+	SLevel = SNew(SEditableText).Text(FText::FromString(TEXT("SGN-SGC_28-27")));
+	STmpPath = SNew(SEditableText).Text(FText::FromString(TEXT("D:/Test/tmp")));
 
 	ChildSlot
 		[
@@ -49,8 +49,8 @@ FReply SUDKImportScreen::OnRun()
 	const FString TmpPath = STmpPath.Get()->GetText().ToString();
 	const FString Level = SLevel.Get()->GetText().ToString();
 
-	T3DParser parser(UdkPath, TmpPath);
-	parser.ImportLevel(Level);
+	T3DLevelParser Parser(UdkPath, TmpPath);
+	Parser.ImportLevel(Level);
 
 	return FReply::Handled();
 }
