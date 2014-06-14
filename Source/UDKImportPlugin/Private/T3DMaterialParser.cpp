@@ -69,7 +69,14 @@ void T3DMaterialParser::ImportMaterial(const FString &Package)
 			{
 				ensure(GetOneValueAfter(TEXT(" Name="), Name));
 				UMaterialExpression* MaterialExpression = ImportMaterialExpression(Class);
-				if (MaterialExpression)
+				UMaterialExpressionComment * MaterialExpressionComment = Cast<UMaterialExpressionComment>(MaterialExpression);
+				if (MaterialExpressionComment)
+				{
+					Material->EditorComments.Add(MaterialExpressionComment);
+					MaterialExpressionComment->MaterialExpressionEditorX -= MaterialExpressionComment->SizeX;
+					FixRequirement(FString::Printf(TEXT("%s'%s'"), *ClassName, *Name), MaterialExpression);
+				}
+				else if (MaterialExpression)
 				{
 					Material->AddExpressionParameter(MaterialExpression);
 					FixRequirement(FString::Printf(TEXT("%s'%s'"), *ClassName, *Name), MaterialExpression);
@@ -116,15 +123,11 @@ UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class)
 	FString Value, Name, PropertyName;
 	while (NextLine() && IgnoreSubs() && !IsEndObject())
 	{
-		if (GetProperty(TEXT("Material="), Value))
-		{
-			MaterialExpression->Material = Material;
-		}
-		else if (GetProperty(TEXT("Texture="), Value))
+		if (GetProperty(TEXT("Texture="), Value))
 		{
 			LevelParser->AddRequirement(Value, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetTexture, (UMaterialExpressionTextureBase*)MaterialExpression));
 		}
-		else if (IsProperty(PropertyName, Value))
+		else if (IsProperty(PropertyName, Value) && PropertyName != TEXT("Material"))
 		{
 			UProperty* Property = FindField<UProperty>(Class, *PropertyName);
 			UStructProperty * StructProperty = Cast<UStructProperty>(Property);
@@ -139,6 +142,8 @@ UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class)
 			}
 		}
 	}
+	MaterialExpression->Material = Material;
+	MaterialExpression->MaterialExpressionEditorX = -MaterialExpression->MaterialExpressionEditorX;
 	EndMaterialExpression();
 
 	return MaterialExpression;
@@ -149,13 +154,13 @@ void T3DMaterialParser::ImportExpression(FExpressionInput * ExpressionInput)
 	FString Value;
 	if (GetOneValueAfter(TEXT("Expression="), Value))
 		AddRequirement(Value, UObjectDelegate::CreateRaw(this, &T3DMaterialParser::SetExpression, ExpressionInput));
-	else if (GetOneValueAfter(TEXT("Mask="), Value))
+	if (GetOneValueAfter(TEXT("Mask="), Value))
 		ExpressionInput->Mask = FCString::Atoi(*Value);
-	else if (GetOneValueAfter(TEXT("MaskR="), Value))
+	if (GetOneValueAfter(TEXT("MaskR="), Value))
 		ExpressionInput->MaskR = FCString::Atoi(*Value);
-	else if (GetOneValueAfter(TEXT("MaskG="), Value))
+	if (GetOneValueAfter(TEXT("MaskG="), Value))
 		ExpressionInput->MaskG = FCString::Atoi(*Value);
-	else if (GetOneValueAfter(TEXT("MaskB="), Value))
+	if (GetOneValueAfter(TEXT("MaskB="), Value))
 		ExpressionInput->MaskB = FCString::Atoi(*Value);
 }
 
