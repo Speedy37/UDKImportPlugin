@@ -1,6 +1,8 @@
 #include "UDKImportPluginPrivatePCH.h"
 #include "T3DParser.h"
 
+DEFINE_LOG_CATEGORY(UDKImportPluginLog);
+
 float T3DParser::UnrRotToDeg = 0.00549316540360483;
 float T3DParser::IntensityMultiplier = 5000;
 
@@ -186,6 +188,15 @@ bool T3DParser::FindRequirement(const FString &UDKRequiredObjectName, UObject * 
 	}
 
 	return false;
+}
+
+void T3DParser::PrintMissingRequirements()
+{
+	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
+	{
+		const FString &Url = Iter.Key();
+		UE_LOG(UDKImportPluginLog, Warning, TEXT("Missing requirements : %s"), *Url);
+	}
 }
 
 bool T3DParser::ParseUDKRotation(const FString &InSourceString, FRotator &Rotator)

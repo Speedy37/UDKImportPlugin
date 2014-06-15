@@ -2,6 +2,7 @@
 
 #define LOCTEXT_NAMESPACE "UDKImportPlugin"
 
+DECLARE_LOG_CATEGORY_EXTERN(UDKImportPluginLog, Log, All);
 DECLARE_DELEGATE_OneParam(UObjectDelegate, UObject*);
 
 class T3DParser
@@ -27,6 +28,7 @@ protected:
 	void AddRequirement(const FString &UDKRequiredObjectName, UObjectDelegate Action);
 	void FixRequirement(const FString &UDKRequiredObjectName, UObject * Object);
 	bool FindRequirement(const FString &UDKRequiredObjectName, UObject * &Object);
+	void PrintMissingRequirements();
 
 	/// Line parsing
 	int32 LineIndex, ParserLevel;

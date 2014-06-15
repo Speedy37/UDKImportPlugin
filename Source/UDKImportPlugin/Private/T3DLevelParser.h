@@ -17,6 +17,7 @@ private:
 	void ResolveRequirements();
 	void ResolveMeshesRequirements();
 	void ExportUDKAssets();
+	TArray<UObject*> CreatedObjects;
 
 	/// Actor creation
 	UWorld * World;

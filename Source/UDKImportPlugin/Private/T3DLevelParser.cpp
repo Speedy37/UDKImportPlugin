@@ -53,8 +53,7 @@ void T3DLevelParser::ImportLevel(const FString &Level)
 
 void T3DLevelParser::ResolveRequirements()
 {
-	bool Continue = true;
-	TArray<FString> StaticMeshFiles;
+	TArray<FString> StaticMeshFiles, TexturesFiles;
 	FAssetToolsModule& AssetToolsModule = FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools");
 	FString Url, Type, PackageName, Name;
 	
@@ -67,9 +66,13 @@ void T3DLevelParser::ResolveRequirements()
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ImportStaticMesh", "Importing Meshes"));
 	StaticMeshFiles.Add(TmpPath / TEXT("Meshes"));
 	AssetToolsModule.Get().ImportAssets(StaticMeshFiles, TEXT("/Game/UDK"));
+
+	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ImportTextures", "Importing Textures"));
+	TexturesFiles.Add(TmpPath / TEXT("Textures"));
+	AssetToolsModule.Get().ImportAssets(TexturesFiles, TEXT("/Game/UDK"));
 	
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ResolvingLinks", "Updating actors assets"));
-	for (auto Iter = Requirements.CreateConstIterator(); Iter && Continue; ++Iter)
+	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
 	{
 		Url = Iter.Key();
 		ParseRessourceUrl(Url, Type, PackageName, Name);
@@ -79,7 +82,25 @@ void T3DLevelParser::ResolveRequirements()
 			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/Meshes/%s/%s.%s"), *PackageName, *Name, *Name);
 			FixRequirement(Url, FindObject<UStaticMesh>(NULL, *ObjectPath));
 		}
+		else if (Type == TEXT("Texture2D"))
+		{
+			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/Textures/%s/%s.%s"), *PackageName, *Name, *Name);
+			FixRequirement(Url, FindObject<UTexture2D>(NULL, *ObjectPath));
+		}
 	}
+
+	// make sure that any static meshes, etc using this material will stop using the FMaterialResource of the original 
+	// material, and will use the new FMaterialResource created when we make a new UMaterial in place
+	FGlobalComponentReregisterContext RecreateComponents;
+
+	// let the material update itself if necessary
+	for (int32 Iter = 0; Iter < CreatedObjects.Num(); ++Iter)
+	{
+		CreatedObjects[Iter]->PreEditChange(NULL);
+		CreatedObjects[Iter]->PostEditChange();
+	}
+
+	PrintMissingRequirements();
 }
 
 void T3DLevelParser::ResolveMeshesRequirements()
@@ -130,7 +151,7 @@ void T3DLevelParser::ExportUDKAssets()
 {
 	FString Url, Type, PackageName, Name;
 	FString ExportFolder, ImportFolder, FileName;
-	TSet<FString> ExportedOBJStaticMeshPackages, ExportedMaterialPackages;
+	TSet<FString> ExportedOBJStaticMeshPackages, ExportedMaterialPackages, ExportedTexturePackages;
 	IFileManager & FileManager = IFileManager::Get();
 
 	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
@@ -178,8 +199,50 @@ void T3DLevelParser::ExportUDKAssets()
 				}
 			}
 
-			T3DMaterialParser Material(this);
-			Material.ImportMaterialT3DFile(ExportFolder / FileName, PackageName);
+			T3DMaterialParser MaterialParser(this, PackageName);
+			UMaterial * Material = MaterialParser.ImportMaterialT3DFile(ExportFolder / FileName);
+			if (Material)
+			{
+				FixRequirement(Url, Material);
+				CreatedObjects.Add(Material);
+			}
+			else
+			{
+				UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to import : %s"), *Url);
+			}
+		}
+	}
+
+	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
+	{
+		Url = Iter.Key();
+		ParseRessourceUrl(Url, Type, PackageName, Name);
+
+		if (Type == TEXT("Texture2D"))
+		{
+			ExportFolder = TmpPath / TEXT("ExportedTextures") / PackageName;
+			ImportFolder = TmpPath / TEXT("Textures") / PackageName;
+			FileName = Name + TEXT(".TGA");
+
+			if (!ExportedTexturePackages.Contains(PackageName))
+			{
+				if (FileManager.DirectoryExists(*ExportFolder)
+					|| RunUDK(FString::Printf(TEXT("batchexport %s Texture TGA %s"), *PackageName, *ExportFolder)) == 0)
+				{
+					ExportedTexturePackages.Add(PackageName);
+				}
+			}
+
+			if (FileManager.FileSize(*(ExportFolder / FileName)) > 0)
+			{
+				if (FileManager.MakeDirectory(*ImportFolder, true))
+				{
+					if (FileManager.FileSize(*(ImportFolder / Name + TEXT(".TGA"))) == INDEX_NONE)
+					{
+						FileManager.Copy(*(ImportFolder / Name + TEXT(".TGA")), *(ExportFolder / FileName));
+					}
+				}
+			}
 		}
 	}
 }

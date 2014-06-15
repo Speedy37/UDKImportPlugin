@@ -2,44 +2,31 @@
 #include "T3DMaterialParser.h"
 #include "T3DLevelParser.h"
 
-T3DMaterialParser::T3DMaterialParser(T3DLevelParser * ParentParser) : T3DParser(ParentParser->UdkPath, ParentParser->TmpPath)
+T3DMaterialParser::T3DMaterialParser(T3DLevelParser * ParentParser, const FString &Package) : T3DParser(ParentParser->UdkPath, ParentParser->TmpPath)
 {
-	LevelParser = ParentParser;
+	this->LevelParser = ParentParser;
+	this->Package = Package;
+	this->Material = NULL;
 }
 
-UMaterialExpression* T3DMaterialParser::BeginMaterialExpression(UClass * Class)
-{
-	if (!Class->IsChildOf(UMaterialExpression::StaticClass()))
-		return NULL;
-	UMaterialExpression* CreatedObject = ConstructObject<UMaterialExpression>(Class, Material);
-	return CreatedObject;
-}
-
-void T3DMaterialParser::EndMaterialExpression()
-{
-
-}
-
-void T3DMaterialParser::ImportMaterialT3DFile(const FString &FileName, const FString &Package)
+UMaterial* T3DMaterialParser::ImportMaterialT3DFile(const FString &FileName)
 {
 	FString MaterialT3D;
 	if (FFileHelper::LoadFileToString(MaterialT3D, *FileName))
 	{
 		ResetParser(MaterialT3D);
 		MaterialT3D.Empty();
-		ImportMaterial(Package);
+		return ImportMaterial();
 	}
+
+	return NULL;
 }
 
-void T3DMaterialParser::ImportMaterial(const FString &Package)
+UMaterial*  T3DMaterialParser::ImportMaterial()
 {
 	FString ClassName, Name, Value;
 	UClass * Class;
-	// 
-	// ParseObject<UClass>(Str, TEXT("CLASS="), ObjClass, ANY_PACKAGE)
-	// ParseObject<UClass>(Str, TEXT("CLASS="), ObjClass, ANY_PACKAGE)
-	// ParseObject( Str, TEXT("CLASS="), UClass::StaticClass(), (UObject*&)ObjClass, ANY_PACKAGE, NULL);
-	// 
+
 	ensure(NextLine());
 	ensure(IsBeginObject(ClassName));
 	ensure(ClassName == TEXT("Material"));
@@ -53,12 +40,10 @@ void T3DMaterialParser::ImportMaterial(const FString &Package)
 	Material = (UMaterial*)AssetToolsModule.Get().CreateAsset(Name, BasePackageName, UMaterial::StaticClass(), MaterialFactory);
 	if (Material == NULL)
 	{
-		return;
+		return NULL;
 	}
 
 	Material->Modify();
-
-	LevelParser->FixRequirement(FString::Printf(TEXT("%s'%s'"), *ClassName, *Name), Material);
 
 	while (NextLine() && !IsEndObject())
 	{
@@ -78,7 +63,7 @@ void T3DMaterialParser::ImportMaterial(const FString &Package)
 				}
 				else if (MaterialExpression)
 				{
-					Material->AddExpressionParameter(MaterialExpression);
+					Material->Expressions.Add(MaterialExpression);
 					FixRequirement(FString::Printf(TEXT("%s'%s'"), *ClassName, *Name), MaterialExpression);
 				}
 			}
@@ -93,11 +78,11 @@ void T3DMaterialParser::ImportMaterial(const FString &Package)
 		}
 		else if (GetProperty(TEXT("SpecularColor="), Value))
 		{
-			ImportExpression(&Material->SpecularColor);
+			ImportExpression(&Material->Specular);
 		}
 		else if (GetProperty(TEXT("SpecularPower="), Value))
 		{
-			ImportExpression(&Material->Specular);
+			// TODO
 		}
 		else if (GetProperty(TEXT("Normal="), Value))
 		{
@@ -112,22 +97,52 @@ void T3DMaterialParser::ImportMaterial(const FString &Package)
 			ImportExpression(&Material->Opacity);
 		}
 	}
+
+	CheckMaterialExpressionTextureNormal(Material->Normal.Expression);
+
+	PrintMissingRequirements();
+
+	return Material;
+}
+
+void T3DMaterialParser::CheckMaterialExpressionTextureNormal(UMaterialExpression * MaterialExpression)
+{
+	if (!MaterialExpression)
+	{
+		return;
+	}
+
+	if (MaterialExpression->IsA<UMaterialExpressionTextureBase>())
+	{
+		((UMaterialExpressionTextureBase*)MaterialExpression)->SamplerType = SAMPLERTYPE_Normal;
+	}
+
+	uint32 InputIndex = 0;
+	while (FExpressionInput* PtrInput = MaterialExpression->GetInput(InputIndex++))
+	{
+		CheckMaterialExpressionTextureNormal(PtrInput->Expression);
+	}
 }
 
 UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class)
 {
-	UMaterialExpression* MaterialExpression = BeginMaterialExpression(Class);
-	if (!MaterialExpression)
+	if (!Class->IsChildOf(UMaterialExpression::StaticClass()))
 		return NULL;
+	UMaterialExpression* MaterialExpression = ConstructObject<UMaterialExpression>(Class, Material);
 
-	FString Value, Name, PropertyName;
+	FString Value, Name, PropertyName, Type, PackageName;
 	while (NextLine() && IgnoreSubs() && !IsEndObject())
 	{
 		if (GetProperty(TEXT("Texture="), Value))
 		{
+			ParseRessourceUrl(Value, Type, PackageName, Name);
+			Value = FString::Printf(TEXT("%s'%s.%s'"), *Type, *PackageName, *Name);
 			LevelParser->AddRequirement(Value, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetTexture, (UMaterialExpressionTextureBase*)MaterialExpression));
 		}
-		else if (IsProperty(PropertyName, Value) && PropertyName != TEXT("Material"))
+		else if (IsProperty(PropertyName, Value) 
+			&& PropertyName != TEXT("Material")
+			&& PropertyName != TEXT("ExpressionGUID")
+			&& PropertyName != TEXT("ObjectArchetype"))
 		{
 			UProperty* Property = FindField<UProperty>(Class, *PropertyName);
 			UStructProperty * StructProperty = Cast<UStructProperty>(Property);
@@ -144,7 +159,6 @@ UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class)
 	}
 	MaterialExpression->Material = Material;
 	MaterialExpression->MaterialExpressionEditorX = -MaterialExpression->MaterialExpressionEditorX;
-	EndMaterialExpression();
 
 	return MaterialExpression;
 }
