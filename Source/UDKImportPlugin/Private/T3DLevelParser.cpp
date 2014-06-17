@@ -104,10 +104,11 @@ void T3DLevelParser::ResolveRequirements()
 	FGlobalComponentReregisterContext RecreateComponents;
 
 	// let the material update itself if necessary
-	for (int32 Iter = 0; Iter < CreatedObjects.Num(); ++Iter)
+	for (auto Iter = CreatedObjects.CreateIterator(); Iter; ++Iter)
 	{
-		CreatedObjects[Iter]->PreEditChange(NULL);
-		CreatedObjects[Iter]->PostEditChange();
+		UObject * Object = *Iter;
+		Object->PreEditChange(NULL);
+		Object->PostEditChange();
 	}
 
 	PrintMissingRequirements();
