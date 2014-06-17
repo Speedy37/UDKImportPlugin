@@ -26,7 +26,7 @@ void T3DLevelParser::ImportLevel(const FString &Level)
 {
 	GWarn->BeginSlowTask(LOCTEXT("StatusBegin", "Importing requested level"), true, false);
 	StatusNumerator = 0;
-	StatusDenominator = 7;
+	StatusDenominator = 12;
 	
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ExportUDKLevelT3D", "Exporting UDK Level informations"));
 	{
@@ -58,7 +58,7 @@ void T3DLevelParser::ResolveRequirements()
 	FAssetToolsModule& AssetToolsModule = FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools");
 	FString Url, Type, PackageName, Name;
 	
-	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ExportStaticMeshRequirements", "Exporting StaticMesh requirements (Materials, ...)"));
+	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ExportStaticMeshRequirements", "Exporting StaticMesh referenced assets"));
 	ExportStaticMeshRequirements();
 
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ExportMaterialInstanceConstantAssets", "Exporting MaterialInstanceConstant assets"));
