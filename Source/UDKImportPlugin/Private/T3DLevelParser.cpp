@@ -180,7 +180,7 @@ void T3DLevelParser::ExportMaterialInstanceConstantAssets()
 		Url = Iter.Key();
 		ParseRessourceUrl(Url, Type, PackageName, Name);
 
-		if (TEXT("MaterialInstanceConstant"))
+		if (Type == TEXT("MaterialInstanceConstant"))
 		{
 			ExportFolder = TmpPath / TEXT("ExportedMaterialInstanceConstant") / PackageName;
 			FileName = Name + TEXT(".T3D");
@@ -225,7 +225,7 @@ void T3DLevelParser::ExportMaterialAssets()
 		Url = Iter.Key();
 		ParseRessourceUrl(Url, Type, PackageName, Name);
 
-		if (TEXT("Material"))
+		if (Type == TEXT("Material"))
 		{
 			ExportFolder = TmpPath / TEXT("ExportedMaterials") / PackageName;
 			FileName = Name + TEXT(".T3D");
