@@ -56,7 +56,6 @@ void T3DLevelParser::ResolveRequirements()
 {
 	TArray<FString> StaticMeshFiles, TexturesFiles;
 	FAssetToolsModule& AssetToolsModule = FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools");
-	FString Url, Type, PackageName, Name;
 	
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ExportStaticMeshRequirements", "Exporting StaticMesh referenced assets"));
 	ExportStaticMeshRequirements();
@@ -84,18 +83,17 @@ void T3DLevelParser::ResolveRequirements()
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ResolvingLinks", "Updating actors assets"));
 	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
 	{
-		Url = Iter.Key();
-		ParseRessourceUrl(Url, Type, PackageName, Name);
+		const FRequirement &Requirement = Iter.Key();
 
-		if (Type == TEXT("StaticMesh"))
+		if (Requirement.Type == TEXT("StaticMesh"))
 		{
-			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/Meshes/%s/%s.%s"), *PackageName, *Name, *Name);
-			FixRequirement(Url, FindObject<UStaticMesh>(NULL, *ObjectPath));
+			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/Meshes/%s/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
+			FixRequirement(Requirement, FindObject<UStaticMesh>(NULL, *ObjectPath));
 		}
-		else if (Type == TEXT("Texture2D"))
+		else if (Requirement.Type == TEXT("Texture2D"))
 		{
-			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/Textures/%s/%s.%s"), *PackageName, *Name, *Name);
-			FixRequirement(Url, FindObject<UTexture2D>(NULL, *ObjectPath));
+			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/Textures/%s/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
+			FixRequirement(Requirement, FindObject<UTexture2D>(NULL, *ObjectPath));
 		}
 	}
 
@@ -116,17 +114,15 @@ void T3DLevelParser::ResolveRequirements()
 
 void T3DLevelParser::ExportStaticMeshRequirements()
 {
-	FString Url, Type, PackageName, Name;
 	int32 StaticMeshesParamsCount = 0;
 	FString StaticMeshesParams = TEXT("run UDKPluginExport.ExportStaticMeshMaterials");
 	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
 	{
-		Url = Iter.Key();
-		ParseRessourceUrl(Url, Type, PackageName, Name);
+		const FRequirement &Requirement = Iter.Key();
 
-		if (Type == TEXT("StaticMesh"))
+		if (Requirement.Type == TEXT("StaticMesh"))
 		{
-			StaticMeshesParams += TEXT(" ") + Url;
+			StaticMeshesParams += TEXT(" ") + Requirement.OriginalUrl;
 			++StaticMeshesParamsCount;
 			if (StaticMeshesParamsCount >= 50)
 			{
@@ -169,7 +165,6 @@ void T3DLevelParser::ExportStaticMeshRequirements(const FString &StaticMeshesPar
 
 void T3DLevelParser::ExportMaterialInstanceConstantAssets()
 {
-	FString Url, Type, PackageName, Name;
 	FString ExportFolder, FileName;
 	IFileManager & FileManager = IFileManager::Get();
 	bool bRequiresAnotherLoop = false;
@@ -178,31 +173,30 @@ void T3DLevelParser::ExportMaterialInstanceConstantAssets()
 
 	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
 	{
-		Url = Iter.Key();
-		ParseRessourceUrl(Url, Type, PackageName, Name);
+		const FRequirement &Requirement = Iter.Key();
 
-		if (Type == TEXT("MaterialInstanceConstant"))
+		if (Requirement.Type == TEXT("MaterialInstanceConstant"))
 		{
-			ExportFolder = TmpPath / TEXT("ExportedMaterialInstanceConstant") / PackageName;
-			FileName = Name + TEXT(".T3D");
+			ExportFolder = TmpPath / TEXT("ExportedMaterialInstanceConstant") / Requirement.Package;
+			FileName = Requirement.Name + TEXT(".T3D");
 
 			if (!FileManager.DirectoryExists(*ExportFolder))
 			{
-				RunUDK(FString::Printf(TEXT("batchexport %s MaterialInstanceConstant T3D %s"), *PackageName, *ExportFolder));
+				RunUDK(FString::Printf(TEXT("batchexport %s MaterialInstanceConstant T3D %s"), *Requirement.Package, *ExportFolder));
 			}
 
-			T3DMaterialInstanceConstantParser MaterialInstanceConstantParser(this, PackageName);
+			T3DMaterialInstanceConstantParser MaterialInstanceConstantParser(this, Requirement.Package);
 			UMaterialInstanceConstant * MaterialInstanceConstant = MaterialInstanceConstantParser.ImportT3DFile(ExportFolder / FileName);
 			if (MaterialInstanceConstant)
 			{
 				bRequiresAnotherLoop = true;
 				
-				FixRequirement(Url, MaterialInstanceConstant);
+				FixRequirement(Requirement, MaterialInstanceConstant);
 				CreatedObjects.Add(MaterialInstanceConstant);
 			}
 			else
 			{
-				UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to import : %s"), *Url);
+				UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to import : %s"), *Requirement.Url);
 			}
 		}
 	}
@@ -215,7 +209,6 @@ void T3DLevelParser::ExportMaterialInstanceConstantAssets()
 
 void T3DLevelParser::ExportMaterialAssets()
 {
-	FString Url, Type, PackageName, Name;
 	FString ExportFolder, ImportFolder, FileName;
 	IFileManager & FileManager = IFileManager::Get();
 
@@ -223,29 +216,28 @@ void T3DLevelParser::ExportMaterialAssets()
 
 	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
 	{
-		Url = Iter.Key();
-		ParseRessourceUrl(Url, Type, PackageName, Name);
+		const FRequirement &Requirement = Iter.Key();
 
-		if (Type == TEXT("Material"))
+		if (Requirement.Type == TEXT("Material"))
 		{
-			ExportFolder = TmpPath / TEXT("ExportedMaterials") / PackageName;
-			FileName = Name + TEXT(".T3D");
+			ExportFolder = TmpPath / TEXT("ExportedMaterials") / Requirement.Package;
+			FileName = Requirement.Name + TEXT(".T3D");
 
 			if (!FileManager.DirectoryExists(*ExportFolder))
 			{
-				RunUDK(FString::Printf(TEXT("batchexport %s Material T3D %s"), *PackageName, *ExportFolder));
+				RunUDK(FString::Printf(TEXT("batchexport %s Material T3D %s"), *Requirement.Package, *ExportFolder));
 			}
 
-			T3DMaterialParser MaterialParser(this, PackageName);
+			T3DMaterialParser MaterialParser(this, Requirement.Package);
 			UMaterial * Material = MaterialParser.ImportMaterialT3DFile(ExportFolder / FileName);
 			if (Material)
 			{
-				FixRequirement(Url, Material);
+				FixRequirement(Requirement, Material);
 				CreatedObjects.Add(Material);
 			}
 			else
 			{
-				UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to import : %s"), *Url);
+				UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to import : %s"), *Requirement.Url);
 			}
 		}
 	}
@@ -253,7 +245,6 @@ void T3DLevelParser::ExportMaterialAssets()
 
 void T3DLevelParser::ExportTextureAssets()
 {
-	FString Url, Type, PackageName, Name;
 	FString ExportFolder, ImportFolder, FileName;
 	IFileManager & FileManager = IFileManager::Get();
 
@@ -261,27 +252,26 @@ void T3DLevelParser::ExportTextureAssets()
 
 	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
 	{
-		Url = Iter.Key();
-		ParseRessourceUrl(Url, Type, PackageName, Name);
+		const FRequirement &Requirement = Iter.Key();
 
-		if (Type == TEXT("Texture2D"))
+		if (Requirement.Type == TEXT("Texture2D"))
 		{
-			ExportFolder = TmpPath / TEXT("ExportedTextures") / PackageName;
-			ImportFolder = TmpPath / TEXT("Textures") / PackageName;
-			FileName = Name + TEXT(".TGA");
+			ExportFolder = TmpPath / TEXT("ExportedTextures") / Requirement.Package;
+			ImportFolder = TmpPath / TEXT("Textures") / Requirement.Package;
+			FileName = Requirement.Name + TEXT(".TGA");
 
 			if (!FileManager.DirectoryExists(*ExportFolder))
 			{
-				RunUDK(FString::Printf(TEXT("batchexport %s Texture TGA %s"), *PackageName, *ExportFolder));
+				RunUDK(FString::Printf(TEXT("batchexport %s Texture TGA %s"), *Requirement.Package, *ExportFolder));
 			}
 
 			if (FileManager.FileSize(*(ExportFolder / FileName)) > 0)
 			{
 				if (FileManager.MakeDirectory(*ImportFolder, true))
 				{
-					if (FileManager.FileSize(*(ImportFolder / Name + TEXT(".TGA"))) == INDEX_NONE)
+					if (FileManager.FileSize(*(ImportFolder / Requirement.Name + TEXT(".TGA"))) == INDEX_NONE)
 					{
-						FileManager.Copy(*(ImportFolder / Name + TEXT(".TGA")), *(ExportFolder / FileName));
+						FileManager.Copy(*(ImportFolder / Requirement.Name + TEXT(".TGA")), *(ExportFolder / FileName));
 					}
 				}
 			}
@@ -291,7 +281,6 @@ void T3DLevelParser::ExportTextureAssets()
 
 void T3DLevelParser::ExportStaticMeshAssets()
 {
-	FString Url, Type, PackageName, Name;
 	FString ExportFolder, ImportFolder, FileName;
 	IFileManager & FileManager = IFileManager::Get();
 
@@ -299,27 +288,26 @@ void T3DLevelParser::ExportStaticMeshAssets()
 
 	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
 	{
-		Url = Iter.Key();
-		ParseRessourceUrl(Url, Type, PackageName, Name);
+		const FRequirement &Requirement = Iter.Key();
 
-		if (Type == TEXT("StaticMesh"))
+		if (Requirement.Type == TEXT("StaticMesh"))
 		{
-			ExportFolder = TmpPath / TEXT("ExportedMeshes") / PackageName;
-			ImportFolder = TmpPath / TEXT("Meshes") / PackageName;
-			FileName = Name + TEXT(".OBJ");
+			ExportFolder = TmpPath / TEXT("ExportedMeshes") / Requirement.Package;
+			ImportFolder = TmpPath / TEXT("Meshes") / Requirement.Package;
+			FileName = Requirement.Name + TEXT(".OBJ");
 
 			if (!FileManager.DirectoryExists(*ExportFolder))
 			{
-				RunUDK(FString::Printf(TEXT("batchexport %s StaticMesh OBJ %s"), *PackageName, *ExportFolder));
+				RunUDK(FString::Printf(TEXT("batchexport %s StaticMesh OBJ %s"), *Requirement.Package, *ExportFolder));
 			}
 
 			if (FileManager.FileSize(*(ExportFolder / FileName)) > 0)
 			{
 				if (FileManager.MakeDirectory(*ImportFolder, true))
 				{
-					if (FileManager.FileSize(*(ImportFolder / Name + TEXT(".FBX"))) == INDEX_NONE)
+					if (FileManager.FileSize(*(ImportFolder / Requirement.Name + TEXT(".FBX"))) == INDEX_NONE)
 					{
-						ConvertOBJToFBX(ExportFolder / FileName, ImportFolder / Name + TEXT(".FBX"));
+						ConvertOBJToFBX(ExportFolder / FileName, ImportFolder / Requirement.Name + TEXT(".FBX"));
 					}
 				}
 			}

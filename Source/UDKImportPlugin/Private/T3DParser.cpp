@@ -139,14 +139,25 @@ bool T3DParser::GetProperty(const FString &Key, FString &Value)
 
 void T3DParser::AddRequirement(const FString &UDKRequiredObjectName, UObjectDelegate Action)
 {
-	UObject ** pObject = FixedRequirements.Find(UDKRequiredObjectName);
+	FRequirement Requirement;
+	if (!ParseRessourceUrl(UDKRequiredObjectName, Requirement))
+	{
+		UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to parse ressource url : %s"), *UDKRequiredObjectName);
+		return;
+	}
+	AddRequirement(Requirement, Action);
+}
+
+void T3DParser::AddRequirement(const FRequirement &Requirement, UObjectDelegate Action)
+{
+	UObject ** pObject = FixedRequirements.Find(Requirement);
 	if (pObject != NULL)
 	{
 		Action.ExecuteIfBound(*pObject);
 	}
 	else
 	{
-		TArray<UObjectDelegate> * pActions = Requirements.Find(UDKRequiredObjectName);
+		TArray<UObjectDelegate> * pActions = Requirements.Find(Requirement);
 		if (pActions != NULL)
 		{
 			pActions->Add(Action);
@@ -155,32 +166,54 @@ void T3DParser::AddRequirement(const FString &UDKRequiredObjectName, UObjectDele
 		{
 			TArray<UObjectDelegate> Actions;
 			Actions.Add(Action);
-			Requirements.Add(UDKRequiredObjectName, Actions);
+			Requirements.Add(Requirement, Actions);
 		}
 	}
 }
 
 void T3DParser::FixRequirement(const FString &UDKRequiredObjectName, UObject * Object)
 {
+	FRequirement Requirement;
+	if (!ParseRessourceUrl(UDKRequiredObjectName, Requirement))
+	{
+		UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to parse ressource url : %s"), *UDKRequiredObjectName);
+		return;
+	}
+	FixRequirement(Requirement, Object);
+}
+
+void T3DParser::FixRequirement(const FRequirement &Requirement, UObject * Object)
+{
 	if (Object == NULL)
 		return;
-	
-	TArray<UObjectDelegate> * pActions = Requirements.Find(UDKRequiredObjectName);
+
+	FixedRequirements.Add(FRequirement(Requirement), Object);
+
+	TArray<UObjectDelegate> * pActions = Requirements.Find(Requirement);
 	if (pActions != NULL)
 	{
 		for (auto IterActions = pActions->CreateConstIterator(); IterActions; ++IterActions)
 		{
 			IterActions->ExecuteIfBound(Object);
 		}
-		Requirements.Remove(UDKRequiredObjectName);
+		Requirements.Remove(Requirement);
 	}
-
-	FixedRequirements.Add(UDKRequiredObjectName, Object);
 }
 
 bool T3DParser::FindRequirement(const FString &UDKRequiredObjectName, UObject * &Object)
 {
-	UObject ** pObject = FixedRequirements.Find(UDKRequiredObjectName);
+	FRequirement Requirement;
+	if (!ParseRessourceUrl(UDKRequiredObjectName, Requirement))
+	{
+		UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to parse ressource url : %s"), *UDKRequiredObjectName);
+		return false;
+	}
+	return FindRequirement(Requirement, Object);
+}
+
+bool T3DParser::FindRequirement(const FRequirement &Requirement, UObject * &Object)
+{
+	UObject ** pObject = FixedRequirements.Find(Requirement);
 	if (pObject != NULL)
 	{
 		Object = *pObject;
@@ -194,8 +227,8 @@ void T3DParser::PrintMissingRequirements()
 {
 	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
 	{
-		const FString &Url = Iter.Key();
-		UE_LOG(UDKImportPluginLog, Warning, TEXT("Missing requirements : %s"), *Url);
+		const FRequirement &Requirement = Iter.Key();
+		UE_LOG(UDKImportPluginLog, Warning, TEXT("Missing requirements : %s"), *Requirement.Url);
 	}
 }
 

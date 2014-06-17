@@ -58,7 +58,17 @@ UMaterialInstanceConstant*  T3DMaterialInstanceConstantParser::ImportMaterialIns
 
 			FTextureParameterValue &Parameter = MaterialInstanceConstant->TextureParameterValues[ParameterIndex];
 			if (GetOneValueAfter(TEXT("ParameterValue="), Value))
-				LevelParser->AddRequirement(Value, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetTextureParameterValue, &Parameter));
+			{
+				FRequirement Requirement;
+				if (ParseRessourceUrl(Value, Requirement))
+				{
+					LevelParser->AddRequirement(Requirement, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetTextureParameterValue, &Parameter));
+				}
+				else
+				{
+					UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to parse ressource url : %s"), *Value);
+				}
+			}
 			if (GetOneValueAfter(TEXT("ParameterName="), Value))
 				Parameter.ParameterName = *Value;
 				
@@ -87,7 +97,15 @@ UMaterialInstanceConstant*  T3DMaterialInstanceConstantParser::ImportMaterialIns
 		}
 		else if (GetProperty(TEXT("Parent="), Value))
 		{
-			LevelParser->AddRequirement(Value, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetParent, MaterialInstanceConstant));
+			FRequirement Requirement;
+			if (ParseRessourceUrl(Value, Requirement))
+			{
+				LevelParser->AddRequirement(Requirement, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetParent, MaterialInstanceConstant));
+			}
+			else
+			{
+				UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to parse ressource url : %s"), *Value);
+			}
 		}
 	}
 

@@ -7,6 +7,11 @@ DECLARE_DELEGATE_OneParam(UObjectDelegate, UObject*);
 
 class T3DParser
 {
+public:
+	struct FRequirement
+	{
+		FString Type, Package, Name, OriginalUrl, Url;
+	};
 protected:
 	static float UnrRotToDeg;
 	static float IntensityMultiplier;
@@ -22,12 +27,15 @@ protected:
 	int32 RunUDK(const FString &CommandLine, FString &output);
 
 	/// Ressources requirements
-	TMap<FString, TArray<UObjectDelegate>> Requirements;
-	TMap<FString, UObject*> FixedRequirements;
+	TMap<FRequirement, TArray<UObjectDelegate>> Requirements;
+	TMap<FRequirement, UObject*> FixedRequirements;
 	bool ConvertOBJToFBX(const FString &ObjFileName, const FString &FBXFilename);
 	void AddRequirement(const FString &UDKRequiredObjectName, UObjectDelegate Action);
 	void FixRequirement(const FString &UDKRequiredObjectName, UObject * Object);
 	bool FindRequirement(const FString &UDKRequiredObjectName, UObject * &Object);
+	void AddRequirement(const FRequirement &Requirement, UObjectDelegate Action);
+	void FixRequirement(const FRequirement &Requirement, UObject * Object);
+	bool FindRequirement(const FRequirement &Requirement, UObject * &Object);
 	void PrintMissingRequirements();
 
 	/// Line parsing
@@ -54,4 +62,26 @@ protected:
 	bool ParseUDKRotation(const FString &InSourceString, FRotator &Rotator);
 	bool ParseFVector(const TCHAR* Stream, FVector& Value);
 	bool ParseRessourceUrl(const FString &Url, FString &Type, FString &Package, FString &Name);
+	bool ParseRessourceUrl(const FString &Url, FRequirement &Requirement);
 };
+
+FORCEINLINE uint32 GetTypeHash(const T3DParser::FRequirement& R)
+{
+	return FCrc::Strihash_DEPRECATED(*(R.Url));
+}
+
+FORCEINLINE bool operator==(const T3DParser::FRequirement& A, const T3DParser::FRequirement& B)
+{
+	return A.Url == B.Url;
+}
+
+FORCEINLINE bool T3DParser::ParseRessourceUrl(const FString &Url, FRequirement &Requirement)
+{
+	Requirement.OriginalUrl = Url;
+	if (ParseRessourceUrl(Url, Requirement.Type, Requirement.Package, Requirement.Name))
+	{
+		Requirement.Url = FString::Printf(TEXT("%s'%s.%s'"), *Requirement.Type, *Requirement.Package, *Requirement.Name);
+		return true;
+	}
+	return false;
+}

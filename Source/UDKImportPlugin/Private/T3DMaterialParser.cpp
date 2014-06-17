@@ -135,9 +135,15 @@ UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class)
 	{
 		if (GetProperty(TEXT("Texture="), Value))
 		{
-			ParseRessourceUrl(Value, Type, PackageName, Name);
-			Value = FString::Printf(TEXT("%s'%s.%s'"), *Type, *PackageName, *Name);
-			LevelParser->AddRequirement(Value, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetTexture, (UMaterialExpressionTextureBase*)MaterialExpression));
+			FRequirement Requirement;
+			if (ParseRessourceUrl(Value, Requirement))
+			{
+				LevelParser->AddRequirement(Requirement, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetTexture, (UMaterialExpressionTextureBase*)MaterialExpression));
+			}
+			else
+			{
+				UE_LOG(UDKImportPluginLog, Warning, TEXT("Unable to parse ressource url : %s"), *Value);
+			}
 		}
 		else if (IsProperty(PropertyName, Value) 
 			&& PropertyName != TEXT("Material")
