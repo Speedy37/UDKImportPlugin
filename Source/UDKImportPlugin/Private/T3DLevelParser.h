@@ -20,8 +20,8 @@ private:
 	void ExportStaticMeshRequirements(const FString &StaticMeshesParams);
 	void ExportMaterialInstanceConstantAssets();
 	void ExportMaterialAssets();
-	void ExportTextureAssets();
-	void ExportStaticMeshAssets();
+	void ExportTextureAssets(TSet<FString> &TexturesPaths);
+	void ExportStaticMeshAssets(TSet<FString> &StaticMeshPaths);
 	void PostEditChangeFor(const FString &Type);
 
 	/// Actor creation
