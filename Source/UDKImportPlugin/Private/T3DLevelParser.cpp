@@ -185,8 +185,14 @@ void T3DLevelParser::ExportMaterialInstanceConstantAssets()
 				RunUDK(FString::Printf(TEXT("batchexport %s MaterialInstanceConstant T3D %s"), *Requirement.Package, *ExportFolder));
 			}
 
-			T3DMaterialInstanceConstantParser MaterialInstanceConstantParser(this, Requirement.Package);
-			UMaterialInstanceConstant * MaterialInstanceConstant = MaterialInstanceConstantParser.ImportT3DFile(ExportFolder / FileName);
+			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/MaterialInstances/%s/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
+			UMaterialInstanceConstant * MaterialInstanceConstant = LoadObject<UMaterialInstanceConstant>(NULL, *ObjectPath, NULL, LOAD_NoWarn);
+			if (!MaterialInstanceConstant)
+			{
+				T3DMaterialInstanceConstantParser MaterialInstanceConstantParser(this, Requirement.Package);
+				MaterialInstanceConstant = MaterialInstanceConstantParser.ImportT3DFile(ExportFolder / FileName);
+			}
+
 			if (MaterialInstanceConstant)
 			{
 				bRequiresAnotherLoop = true;
@@ -227,9 +233,15 @@ void T3DLevelParser::ExportMaterialAssets()
 			{
 				RunUDK(FString::Printf(TEXT("batchexport %s Material T3D %s"), *Requirement.Package, *ExportFolder));
 			}
+				
+			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/Material/%s/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
+			UMaterial * Material = LoadObject<UMaterial>(NULL, *ObjectPath, NULL, LOAD_NoWarn);
+			if (!Material)
+			{
+				T3DMaterialParser MaterialParser(this, Requirement.Package);
+				Material = MaterialParser.ImportMaterialT3DFile(ExportFolder / FileName);
+			}
 
-			T3DMaterialParser MaterialParser(this, Requirement.Package);
-			UMaterial * Material = MaterialParser.ImportMaterialT3DFile(ExportFolder / FileName);
 			if (Material)
 			{
 				FixRequirement(Requirement, Material);

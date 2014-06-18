@@ -32,9 +32,7 @@ UMaterial*  T3DMaterialParser::ImportMaterial()
 	ensure(ClassName == TEXT("Material"));
 	ensure(GetOneValueAfter(TEXT(" Name="), Name));
 
-	FString BasePackageName = TEXT("/Game/UDK/Materials");
-	BasePackageName /= Package;
-
+	FString BasePackageName = FString::Printf(TEXT("/Game/UDK/Materials/%s"), *Package);
 	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
 	UMaterialFactoryNew* MaterialFactory = ConstructObject<UMaterialFactoryNew>(UMaterialFactoryNew::StaticClass());
 	Material = (UMaterial*)AssetToolsModule.Get().CreateAsset(Name, BasePackageName, UMaterial::StaticClass(), MaterialFactory);

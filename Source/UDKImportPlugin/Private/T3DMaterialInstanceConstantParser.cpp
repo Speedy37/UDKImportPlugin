@@ -32,9 +32,7 @@ UMaterialInstanceConstant*  T3DMaterialInstanceConstantParser::ImportMaterialIns
 	ensure(ClassName == TEXT("MaterialInstanceConstant"));
 	ensure(GetOneValueAfter(TEXT(" Name="), Name));
 
-	FString BasePackageName = TEXT("/Game/UDK/Materials");
-	BasePackageName /= Package;
-
+	FString BasePackageName = FString::Printf(TEXT("/Game/UDK/MaterialInstances/%s"), *Package);
 	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools");
 	UMaterialInstanceConstantFactoryNew* MaterialFactory = ConstructObject<UMaterialInstanceConstantFactoryNew>(UMaterialInstanceConstantFactoryNew::StaticClass());
 	MaterialInstanceConstant = (UMaterialInstanceConstant*)AssetToolsModule.Get().CreateAsset(Name, BasePackageName, UMaterialInstanceConstant::StaticClass(), MaterialFactory);
