@@ -116,9 +116,39 @@ bool T3DParser::GetOneValueAfter(const FString &Key, FString &Value)
 		start += Key.Len();
 
 		const TCHAR * Buffer = *Line + start;
-		while (*Buffer != TCHAR(' ') && *Buffer != TCHAR(',') && *Buffer != TCHAR(')'))
+		if (*Buffer == TCHAR('"'))
+		{
+			++start;
+			++Buffer;
+			bool Escaping = false;
+			while (*Buffer && (*Buffer != TCHAR('"') || Escaping))
+			{
+				if (Escaping)
+					Escaping = false;
+				else if (*Buffer == TCHAR('\\'))
+					Escaping = true;
+				++Buffer;
+			}
+		}
+		else if(*Buffer == TCHAR('('))
 		{
 			++Buffer;
+			int Level = 1;
+			while (*Buffer && Level != 0)
+			{
+				if (*Buffer == TCHAR('('))
+					++Level;
+				else if (*Buffer == TCHAR(')'))
+					--Level;
+				++Buffer;
+			}
+		}
+		else
+		{
+			while (*Buffer && *Buffer != TCHAR(' ') && *Buffer != TCHAR(',') && *Buffer != TCHAR(')'))
+			{
+				++Buffer;
+			}
 		}
 		Value = Line.Mid(start, Buffer - *Line - start);
 
