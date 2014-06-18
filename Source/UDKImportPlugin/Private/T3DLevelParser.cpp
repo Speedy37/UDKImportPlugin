@@ -108,15 +108,32 @@ void T3DLevelParser::ResolveRequirements()
 	// material, and will use the new FMaterialResource created when we make a new UMaterial in place
 	FGlobalComponentReregisterContext RecreateComponents;
 
-	// let the material update itself if necessary
-	for (auto Iter = CreatedObjects.CreateIterator(); Iter; ++Iter)
-	{
-		UObject * Object = *Iter;
-		Object->PreEditChange(NULL);
-		Object->PostEditChange();
-	}
+	// Compile Materials
+	PostEditChangeFor(TEXT("Material"));
+	PostEditChangeFor(TEXT("MaterialInstanceConstant"));
+	PostEditChangeFor(TEXT("StaticMesh"));
 
 	PrintMissingRequirements();
+}
+
+void T3DLevelParser::PostEditChangeFor(const FString &Type)
+{
+	for (auto Iter = FixedRequirements.CreateIterator(); Iter; ++Iter)
+	{
+		const FRequirement &Requirement = Iter.Key();
+		if (Requirement.Type == Type)
+		{
+			if (Requirement.Name == TEXT("MI_StargateSupport_Base"))
+			{
+				UE_LOG(UDKImportPluginLog, Warning, TEXT("Test Me : %s"), *Requirement.Url);
+			}
+			UObject * Object = Iter.Value();
+			if (Object)
+			{
+				Object->PostEditChange();
+			}
+		}
+	}
 }
 
 void T3DLevelParser::ExportStaticMeshRequirements()
@@ -205,7 +222,6 @@ void T3DLevelParser::ExportMaterialInstanceConstantAssets()
 				bRequiresAnotherLoop = true;
 				
 				FixRequirement(Requirement, MaterialInstanceConstant);
-				CreatedObjects.Add(MaterialInstanceConstant);
 			}
 			else
 			{
@@ -252,7 +268,6 @@ void T3DLevelParser::ExportMaterialAssets()
 			if (Material)
 			{
 				FixRequirement(Requirement, Material);
-				CreatedObjects.Add(Material);
 			}
 			else
 			{

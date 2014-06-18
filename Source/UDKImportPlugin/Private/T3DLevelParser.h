@@ -22,7 +22,7 @@ private:
 	void ExportMaterialAssets();
 	void ExportTextureAssets();
 	void ExportStaticMeshAssets();
-	TArray<UObject*> CreatedObjects;
+	void PostEditChangeFor(const FString &Type);
 
 	/// Actor creation
 	UWorld * World;
