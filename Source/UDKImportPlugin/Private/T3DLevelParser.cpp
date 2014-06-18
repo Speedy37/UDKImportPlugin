@@ -704,6 +704,24 @@ void T3DLevelParser::SetTexture(UObject * Object, UMaterialExpressionTextureBase
 {
 	UTexture * Texture = Cast<UTexture>(Object);
 	MaterialExpression->Texture = Texture;
+	switch (Texture->CompressionSettings)
+	{
+	case TC_Normalmap:
+		MaterialExpression->SamplerType = SAMPLERTYPE_Normal;
+		break;
+	case TC_Grayscale:
+		MaterialExpression->SamplerType = SAMPLERTYPE_Grayscale;
+		break;
+	case TC_Masks:
+		MaterialExpression->SamplerType = SAMPLERTYPE_Masks;
+		break;
+	case TC_Alpha:
+		MaterialExpression->SamplerType = SAMPLERTYPE_Alpha;
+		break;
+	default:
+		MaterialExpression->SamplerType = SAMPLERTYPE_Color;
+		break;
+	}
 }
 
 void T3DLevelParser::SetParent(UObject * Object, UMaterialInstanceConstant * MaterialInstanceConstant)

@@ -18,7 +18,6 @@ private:
 	UMaterial * Material;
 
 	UMaterialExpression* ImportMaterialExpression(UClass * Class);
-	void CheckMaterialExpressionTextureNormal(UMaterialExpression * MaterialExpression);
 	void ImportExpression(FExpressionInput * ExpressionInput);
 	void SetExpression(UObject * Object, FExpressionInput * ExpressionInput);
 };

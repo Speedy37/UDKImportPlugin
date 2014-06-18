@@ -96,30 +96,9 @@ UMaterial*  T3DMaterialParser::ImportMaterial()
 		}
 	}
 
-	CheckMaterialExpressionTextureNormal(Material->Normal.Expression);
-
 	PrintMissingRequirements();
 
 	return Material;
-}
-
-void T3DMaterialParser::CheckMaterialExpressionTextureNormal(UMaterialExpression * MaterialExpression)
-{
-	if (!MaterialExpression)
-	{
-		return;
-	}
-
-	if (MaterialExpression->IsA<UMaterialExpressionTextureBase>())
-	{
-		((UMaterialExpressionTextureBase*)MaterialExpression)->SamplerType = SAMPLERTYPE_Normal;
-	}
-
-	uint32 InputIndex = 0;
-	while (FExpressionInput* PtrInput = MaterialExpression->GetInput(InputIndex++))
-	{
-		CheckMaterialExpressionTextureNormal(PtrInput->Expression);
-	}
 }
 
 UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class)
