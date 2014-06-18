@@ -81,6 +81,7 @@ void T3DLevelParser::ResolveRequirements()
 	AssetToolsModule.Get().ImportAssets(TexturesFiles, TEXT("/Game/UDK"));
 	
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ResolvingLinks", "Updating actors assets"));
+	UTexture2D * DefaultTexture2D = FindObject<UTexture2D>(NULL, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
 	for (auto Iter = Requirements.CreateConstIterator(); Iter; ++Iter)
 	{
 		const FRequirement &Requirement = Iter.Key();
@@ -93,7 +94,13 @@ void T3DLevelParser::ResolveRequirements()
 		else if (Requirement.Type == TEXT("Texture2D"))
 		{
 			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/Textures/%s/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
-			FixRequirement(Requirement, FindObject<UTexture2D>(NULL, *ObjectPath));
+			UTexture2D * Texture2D = FindObject<UTexture2D>(NULL, *ObjectPath);
+			if (!Texture2D)
+			{
+				UE_LOG(UDKImportPluginLog, Warning, TEXT("Missing requirements : %s"), *Requirement.Url);
+				Texture2D = DefaultTexture2D;
+			}
+			FixRequirement(Requirement, Texture2D);
 		}
 	}
 
