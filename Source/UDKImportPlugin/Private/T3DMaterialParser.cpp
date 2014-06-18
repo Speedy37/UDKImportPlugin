@@ -127,6 +127,31 @@ UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class)
 			&& PropertyName != TEXT("ExpressionGUID")
 			&& PropertyName != TEXT("ObjectArchetype"))
 		{
+			if (Class->GetName() == TEXT("MaterialExpressionDesaturation") && PropertyName == TEXT("Percent"))
+			{
+				PropertyName = TEXT("Fraction");
+			}
+			else if (Class == UMaterialExpressionConstant4Vector::StaticClass())
+			{
+				if (PropertyName == TEXT("A"))
+					((UMaterialExpressionConstant4Vector*)MaterialExpression)->Constant.A = FCString::Atof(*Value);
+				else if (PropertyName == TEXT("B"))
+					((UMaterialExpressionConstant4Vector*)MaterialExpression)->Constant.B = FCString::Atof(*Value);
+				else if (PropertyName == TEXT("G"))
+					((UMaterialExpressionConstant4Vector*)MaterialExpression)->Constant.G = FCString::Atof(*Value);
+				else if (PropertyName == TEXT("R"))
+					((UMaterialExpressionConstant4Vector*)MaterialExpression)->Constant.R = FCString::Atof(*Value);
+			}
+			else if (Class == UMaterialExpressionConstant3Vector::StaticClass())
+			{
+				if (PropertyName == TEXT("B"))
+					((UMaterialExpressionConstant3Vector*)MaterialExpression)->Constant.B = FCString::Atof(*Value);
+				else if (PropertyName == TEXT("G"))
+					((UMaterialExpressionConstant3Vector*)MaterialExpression)->Constant.G = FCString::Atof(*Value);
+				else if (PropertyName == TEXT("R"))
+					((UMaterialExpressionConstant3Vector*)MaterialExpression)->Constant.R = FCString::Atof(*Value);
+			}
+
 			UProperty* Property = FindField<UProperty>(Class, *PropertyName);
 			UStructProperty * StructProperty = Cast<UStructProperty>(Property);
 			if (StructProperty && StructProperty->Struct->GetName() == TEXT("ExpressionInput"))
