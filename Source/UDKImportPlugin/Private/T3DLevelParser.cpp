@@ -159,7 +159,7 @@ void T3DLevelParser::ExportStaticMeshRequirements()
 		{
 			StaticMeshesParams += TEXT(" ") + Requirement.OriginalUrl;
 			++StaticMeshesParamsCount;
-			if (StaticMeshesParamsCount >= 50)
+			if (StaticMeshesParamsCount >= 200)
 			{
 				ExportStaticMeshRequirements(StaticMeshesParams);
 				StaticMeshesParamsCount = 0;
@@ -311,7 +311,6 @@ void T3DLevelParser::ExportTextureAssets(TSet<FString> &TexturesPaths)
 
 			ExportFolder = TmpPath / TEXT("ExportedTextures") / Requirement.Package;
 			ImportFolder = TmpPath / TEXT("Textures") / Requirement.Package;
-			TexturesPaths.Add(ImportFolder);
 			FileName = Requirement.Name + TEXT(".TGA");
 
 			if (!FileManager.DirectoryExists(*ExportFolder))
@@ -325,6 +324,7 @@ void T3DLevelParser::ExportTextureAssets(TSet<FString> &TexturesPaths)
 				{
 					if (FileManager.FileSize(*(ImportFolder / Requirement.Name + TEXT(".TGA"))) == INDEX_NONE)
 					{
+						TexturesPaths.Add(ImportFolder);
 						FileManager.Copy(*(ImportFolder / Requirement.Name + TEXT(".TGA")), *(ExportFolder / FileName));
 					}
 				}
@@ -335,7 +335,7 @@ void T3DLevelParser::ExportTextureAssets(TSet<FString> &TexturesPaths)
 
 void T3DLevelParser::ExportStaticMeshAssets(TSet<FString> &StaticMeshPaths)
 {
-	FString ExportFolder, ImportFolder, FileName;
+	FString ExportFolder, ImportFolder, FileNameOBJ, FileNameFBX;
 	IFileManager & FileManager = IFileManager::Get();
 
 	FileManager.MakeDirectory(*(TmpPath / TEXT("ExportedMeshes")), true);
@@ -356,22 +356,26 @@ void T3DLevelParser::ExportStaticMeshAssets(TSet<FString> &StaticMeshPaths)
 
 			ExportFolder = TmpPath / TEXT("ExportedMeshes") / Requirement.Package;
 			ImportFolder = TmpPath / TEXT("Meshes") / Requirement.Package;
-			StaticMeshPaths.Add(ImportFolder);
-			FileName = Requirement.Name + TEXT(".OBJ");
+			FileNameOBJ = Requirement.Name + TEXT(".OBJ");
+			FileNameFBX = Requirement.Name + TEXT(".FBX");
 
 			if (!FileManager.DirectoryExists(*ExportFolder))
 			{
 				RunUDK(FString::Printf(TEXT("batchexport %s StaticMesh OBJ %s"), *Requirement.Package, *ExportFolder));
 			}
 
-			if (FileManager.FileSize(*(ExportFolder / FileName)) > 0)
+			if (FileManager.FileSize(*(ImportFolder / FileNameFBX)) != INDEX_NONE)
 			{
-				if (FileManager.MakeDirectory(*ImportFolder, true))
+				FileManager.MakeDirectory(*ImportFolder, true);
+				if (FileManager.FileSize(*(ExportFolder / FileNameFBX)) > 0)
 				{
-					if (FileManager.FileSize(*(ImportFolder / Requirement.Name + TEXT(".FBX"))) == INDEX_NONE)
-					{
-						ConvertOBJToFBX(ExportFolder / FileName, ImportFolder / Requirement.Name + TEXT(".FBX"));
-					}
+					StaticMeshPaths.Add(ImportFolder);
+					FileManager.Copy(*(ImportFolder / FileNameFBX), *(ExportFolder / FileNameFBX));
+				}
+				else if (FileManager.FileSize(*(ExportFolder / FileNameOBJ)) > 0)
+				{
+					StaticMeshPaths.Add(ImportFolder);
+					ConvertOBJToFBX(ExportFolder / FileNameOBJ, ImportFolder / FileNameFBX);
 				}
 			}
 		}
