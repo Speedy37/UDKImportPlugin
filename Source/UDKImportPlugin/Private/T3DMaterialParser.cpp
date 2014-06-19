@@ -184,6 +184,8 @@ void T3DMaterialParser::ImportExpression(FExpressionInput * ExpressionInput)
 		ExpressionInput->MaskG = FCString::Atoi(*Value);
 	if (GetOneValueAfter(TEXT("MaskB="), Value))
 		ExpressionInput->MaskB = FCString::Atoi(*Value);
+	if (GetOneValueAfter(TEXT("MaskA="), Value))
+		ExpressionInput->MaskA = FCString::Atoi(*Value);
 }
 
 void T3DMaterialParser::SetExpression(UObject * Object, FExpressionInput * ExpressionInput)
