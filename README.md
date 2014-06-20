@@ -3,7 +3,7 @@ UDKImportPlugin for Unreal Engine 4
 
 UDKImportPlugin is a module for the Unreal Engine 4 editor providing a  tool for migrating maps for the Unreal Developement Kit (UDK). This module has been made for the [Stargate Network](http://www.stargate-network.net/) and Stargate No Limits teams to help them migrates their contents to the Unreal Engine 4.
 
-If an EpicGame dev show this : 
+If an EpicGame dev reads this : 
 > Why the batchexport PackageName StaticMesh FBX command produce empty files ?
 
 It supports migrating :
