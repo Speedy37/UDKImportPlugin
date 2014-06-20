@@ -8,30 +8,77 @@ DEFINE_LOG_CATEGORY(LogUDKImportPlugin);
 
 void SUDKImportScreen::Construct(const FArguments& Args)
 {
-	SUDKPath = SNew(SEditableText).Text(FText::FromString(TEXT("F:/Development/ue3")));
-	SLevel = SNew(SEditableText).Text(FText::FromString(TEXT("SGN-SGC_28-27")));
-	STmpPath = SNew(SEditableText).Text(FText::FromString(TEXT("D:/Test/tmp")));
+	SUDKPath = SNew(SEditableTextBox)
+		.Text(FText::FromString(TEXT("C:/UDK/UDK-2014-02")))
+		.ToolTipText(LOCTEXT("UDKPath", "Path to the UDK directory(ex: \"C:/UDK/UDK-2014-02\")"));
+	SLevel = SNew(SEditableTextBox)
+		.Text(FText::FromString(TEXT("MyLevel")))
+		.ToolTipText(LOCTEXT("MapName", "Name of the map to export"));
+	STmpPath = SNew(SEditableTextBox)
+		.Text(FText::FromString(TEXT("C:/UDK/TemporaryFolder")))
+		.ToolTipText(LOCTEXT("ExportTmpFolder", "An existing temporary folder to use for the UDK exportation"));
 
 	ChildSlot
+	[
+		SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.0f)
 		[
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot()
-			.VAlign(VAlign_Top)
+			.FillHeight(1.0f)
+			.Padding(2.0f)
+			.VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("UDKPathLabel", "Path to UDK"))
+			]
+			+ SVerticalBox::Slot()
+			.FillHeight(1.0f)
+			.Padding(2.0f)
+			.VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("MapNameLabel", "Map Name"))
+			]
+			+ SVerticalBox::Slot()
+			.FillHeight(1.0f)
+			.Padding(2.0f)
+			.VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("TmpDirLabel", "Temporary Directory"))
+			]
+			+ SVerticalBox::Slot()
+			.FillHeight(1.0f)
+			.Padding(2.0f)
+			.VAlign(VAlign_Center)
+		]
+		+ SHorizontalBox::Slot()
+		.FillWidth(2.0f)
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.FillHeight(1.0f)
+			.Padding(2.0f)
 			[
 				SUDKPath.ToSharedRef()
 			]
 			+ SVerticalBox::Slot()
-			.VAlign(VAlign_Top)
+			.FillHeight(1.0f)
+			.Padding(2.0f)
 			[
 				SLevel.ToSharedRef()
 			]
 			+ SVerticalBox::Slot()
-			.VAlign(VAlign_Top)
+			.FillHeight(1.0f)
+			.Padding(2.0f)
 			[
 				STmpPath.ToSharedRef()
 			]
 			+ SVerticalBox::Slot()
-			.VAlign(VAlign_Top)
+			.FillHeight(1.0f)
+			.Padding(2.0f)
 			[
 				SNew(SButton)
 				.HAlign(HAlign_Center)
@@ -39,8 +86,8 @@ void SUDKImportScreen::Construct(const FArguments& Args)
 				.Text(LOCTEXT("Run", "Run"))
 				.OnClicked(this, &SUDKImportScreen::OnRun)
 			]
-		];
-
+		]
+	];
 }
 
 FReply SUDKImportScreen::OnRun()

@@ -17,13 +17,13 @@ class SUDKImportScreen : public SCompoundWidget
 	FReply OnRun();
 
 	/** Path to the UDK directory (ex: "C:/UDK/UDK-2014-02") */
-	TSharedPtr<SEditableText> SUDKPath;
+	TSharedPtr<SEditableTextBox> SUDKPath;
 
 	/** Name of the Map to export */
-	TSharedPtr<SEditableText> SLevel;
+	TSharedPtr<SEditableTextBox> SLevel;
 
 	/** Path to the temporary directory to use */
-	TSharedPtr<SEditableText> STmpPath;
+	TSharedPtr<SEditableTextBox> STmpPath;
 
 
 };
