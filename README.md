@@ -32,6 +32,7 @@ If you want the plugin beeing able to do the automatic OBJ exportation, you must
 You should have something like this : `MyProject/Plugins/UDKImportPlugin`
 3. Then simply right click on your .uproject file and "Generate Visual Studio Project" to force generation of valid Visual Studio project with the plugin inside.
 4. Now start your project. While starting the editor should build the plugin
+5. To access to the import tool go to : `Help > UDKImport`
 
 Tips
 ----
