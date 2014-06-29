@@ -530,40 +530,6 @@ void T3DLevelParser::ImportBrush()
 	}
 	
 	Model->Modify();
-	if (!Model->Linked)
-	{
-		Model->Linked = 1;
-		for (int32 i = 0; i<Model->Polys->Element.Num(); i++)
-		{
-			Model->Polys->Element[i].iLink = i;
-		}
-
-		for (int32 i = 0; i<Model->Polys->Element.Num(); i++)
-		{
-			FPoly* EdPoly = &Model->Polys->Element[i];
-			if (EdPoly->iLink == i)
-			{
-				for (int32 j = i + 1; j<Model->Polys->Element.Num(); j++)
-				{
-					FPoly* OtherPoly = &Model->Polys->Element[j];
-					if
-						(OtherPoly->iLink == j
-						&&	OtherPoly->Material == EdPoly->Material
-						&&	OtherPoly->TextureU == EdPoly->TextureU
-						&&	OtherPoly->TextureV == EdPoly->TextureV
-						&&	OtherPoly->PolyFlags == EdPoly->PolyFlags
-						&& (OtherPoly->Normal | EdPoly->Normal)>0.9999)
-					{
-						float Dist = FVector::PointPlaneDist(OtherPoly->Vertices[0], EdPoly->Vertices[0], EdPoly->Normal);
-						if (Dist>-0.001 && Dist<0.001)
-						{
-							OtherPoly->iLink = i;
-						}
-					}
-				}
-			}
-		}
-	}
 
 	// Build bounds.
 	Model->BuildBound();
