@@ -398,6 +398,25 @@ bool T3DParser::ConvertOBJToFBX(const FString &ObjFileName, const FString &FBXFi
 	return false;
 }
 
+void T3DParser::ParseRessourceUrl(const FString &Url, FString &Package, FString &Name)
+{
+	int32 PackageIndex, NameIndex;
+
+	PackageIndex = Url.Find(".", ESearchCase::CaseSensitive, ESearchDir::FromStart);
+
+	if (PackageIndex == -1)
+	{
+		Package = Url;
+		Name = FString();
+	}
+	else
+	{
+		Package = Url.Mid(0, PackageIndex);
+		NameIndex = Url.Find(".", ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+		Name = Url.Mid(NameIndex + 1);
+	}
+}
+
 bool T3DParser::ParseRessourceUrl(const FString &Url, FString &Type, FString &Package, FString &Name)
 {
 	int32 Index, PackageIndex, NameIndex;

@@ -12,8 +12,28 @@ class T3DLevelParser : public T3DParser
 public:
 	T3DLevelParser(const FString &UdkPath, const FString &TmpPath);
 	void ImportLevel(const FString &Level);
+	void ImportStaticMesh(const FString &StaticMesh);
+	void ImportMaterial(const FString &Material);
+	void ImportMaterialInstanceConstant(const FString &MaterialInstanceConstant);
 
 private:
+	// Export tools
+	struct EExportType
+	{
+		enum Type
+		{
+			StaticMesh,
+			Material,
+			MaterialInstanceConstant,
+			Texture2D
+		};
+	};
+	FString ExportFolderFor(EExportType::Type Type);
+	FString RessourceTypeFor(EExportType::Type Type);
+	void ImportRessource(const FString &Ressource, EExportType::Type Type);
+	bool ExportPackage(const FString &Package, EExportType::Type Type, FString & ExportFolder);
+	void ExportPackageToRequirements(const FString &Package, EExportType::Type Type);
+
 	/// Ressources requirements
 	void ResolveRequirements();
 	void ExportStaticMeshRequirements();

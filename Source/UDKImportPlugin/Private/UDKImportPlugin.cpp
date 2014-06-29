@@ -58,7 +58,7 @@ void FUDKImportPlugin::SummonUDKImport()
 	TSharedPtr<SWindow> UDKImportWindow =
 		SNew(SWindow)
 		.Title(UDKImportWindowTitle)
-		.ClientSize(FVector2D(600.f, 100.f))
+		.ClientSize(FVector2D(600.f, 150.f))
 		.SupportsMaximize(false).SupportsMinimize(false)
 		.SizingRule(ESizingRule::FixedSize)
 		[

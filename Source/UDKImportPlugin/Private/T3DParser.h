@@ -61,6 +61,7 @@ protected:
 	bool GetProperty(const FString &Key, FString &Value);
 	bool ParseUDKRotation(const FString &InSourceString, FRotator &Rotator);
 	bool ParseFVector(const TCHAR* Stream, FVector& Value);
+	void ParseRessourceUrl(const FString &Url, FString &Package, FString &Name);
 	bool ParseRessourceUrl(const FString &Url, FString &Type, FString &Package, FString &Name);
 	bool ParseRessourceUrl(const FString &Url, FRequirement &Requirement);
 };
