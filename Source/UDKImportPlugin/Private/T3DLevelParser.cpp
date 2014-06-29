@@ -168,7 +168,6 @@ bool T3DLevelParser::ExportPackage(const FString &Package, EExportType::Type Typ
 
 void T3DLevelParser::ResolveRequirements()
 {
-	TSet<FString> StaticMeshPaths, TexturesPaths;
 	FAssetToolsModule& AssetToolsModule = FModuleManager::Get().LoadModuleChecked<FAssetToolsModule>("AssetTools");
 	
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ExportStaticMeshRequirements", "Exporting StaticMesh referenced assets"));
@@ -181,16 +180,15 @@ void T3DLevelParser::ResolveRequirements()
 	ExportMaterialAssets();
 
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ExportTextureAssets", "Exporting Texture assets"));
-	ExportTextureAssets(TexturesPaths);
+	ExportTextureAssets();
 
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ExportStaticMeshAssets", "Exporting StaticMesh assets"));
-	ExportStaticMeshAssets(StaticMeshPaths);
+	ExportStaticMeshAssets();
 	
-	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ImportStaticMesh", "Importing Meshes"));
-	AssetToolsModule.Get().ImportAssets(StaticMeshPaths.Array(), TEXT("/Game/UDK/TmpMeshes"));
-
-	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ImportTextures", "Importing Textures"));
-	AssetToolsModule.Get().ImportAssets(TexturesPaths.Array(), TEXT("/Game/UDK/TmpTextures"));
+	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ImportAssets", "Importing Assets"));
+	TArray<FString> AssetsPath;
+	AssetsPath.Add(TmpPath / TEXT("UDK"));
+	AssetToolsModule.Get().ImportAssets(AssetsPath, TEXT("/Game/"));
 	
 	GWarn->StatusUpdate(++StatusNumerator, StatusDenominator, LOCTEXT("ResolvingLinks", "Updating actors assets"));
 	UTexture2D * DefaultTexture2D = FindObject<UTexture2D>(NULL, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
@@ -200,30 +198,21 @@ void T3DLevelParser::ResolveRequirements()
 
 		if (Requirement.Type == TEXT("StaticMesh"))
 		{
-			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/TmpMeshes/%s/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
+			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/%s/Meshes/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
 			UObject * Object = FindObject<UStaticMesh>(NULL, *ObjectPath);
 			if (Object)
 			{
-				TArray < FAssetRenameData > AssetsAndNames;
-				new(AssetsAndNames)FAssetRenameData(Object, FString::Printf(TEXT("/Game/UDK/%s/Meshes"), *Requirement.Package), Object->GetName());
-				AssetToolsModule.Get().RenameAssets(AssetsAndNames);
 				FixRequirement(Requirement, Object);
 			}
 		}
 		else if (Requirement.Type == TEXT("Texture2D"))
 		{
-			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/TmpTextures/%s/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
+			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/%s/Textures/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
 			UTexture2D * Texture2D = FindObject<UTexture2D>(NULL, *ObjectPath);
 			if (!Texture2D)
 			{
 				UE_LOG(UDKImportPluginLog, Warning, TEXT("Missing requirements : %s"), *Requirement.Url);
 				Texture2D = DefaultTexture2D;
-			}
-			else
-			{
-				TArray < FAssetRenameData > AssetsAndNames;
-				new(AssetsAndNames)FAssetRenameData(Texture2D, FString::Printf(TEXT("/Game/UDK/%s/Textures"), *Requirement.Package), Texture2D->GetName());
-				AssetToolsModule.Get().RenameAssets(AssetsAndNames);
 			}
 			FixRequirement(Requirement, Texture2D);
 		}
@@ -384,7 +373,7 @@ void T3DLevelParser::ExportMaterialAssets()
 	}
 }
 
-void T3DLevelParser::ExportTextureAssets(TSet<FString> &TexturesPaths)
+void T3DLevelParser::ExportTextureAssets()
 {
 	IFileManager & FileManager = IFileManager::Get();
 
@@ -407,22 +396,19 @@ void T3DLevelParser::ExportTextureAssets(TSet<FString> &TexturesPaths)
 			FString FileName = Requirement.Name + TEXT(".TGA");
 			ExportPackage(Requirement.Package, EExportType::Texture2D, ExportFolder);
 
-			if (FileManager.FileSize(*(ExportFolder / FileName)) > 0)
+			if (FileManager.FileSize(*(ImportFolder / FileName)) == INDEX_NONE)
 			{
-				if (FileManager.MakeDirectory(*ImportFolder, true))
+				FileManager.MakeDirectory(*ImportFolder, true);
+				if (FileManager.FileSize(*(ExportFolder / FileName)) > 0)
 				{
-					if (FileManager.FileSize(*(ImportFolder / Requirement.Name + TEXT(".TGA"))) == INDEX_NONE)
-					{
-						TexturesPaths.Add(ImportFolder);
-						FileManager.Copy(*(ImportFolder / Requirement.Name + TEXT(".TGA")), *(ExportFolder / FileName));
-					}
+					FileManager.Copy(*(ImportFolder / FileName), *(ExportFolder / FileName));
 				}
 			}
 		}
 	}
 }
 
-void T3DLevelParser::ExportStaticMeshAssets(TSet<FString> &StaticMeshPaths)
+void T3DLevelParser::ExportStaticMeshAssets()
 {
 	FString ExportFolder, ImportFolder, FileNameOBJ, FileNameFBX;
 	IFileManager & FileManager = IFileManager::Get();
@@ -449,17 +435,15 @@ void T3DLevelParser::ExportStaticMeshAssets(TSet<FString> &StaticMeshPaths)
 			FString FileNameFBX = Requirement.Name + TEXT(".FBX");
 			ExportPackage(Requirement.Package, EExportType::StaticMesh, ExportFolder);
 
-			if (FileManager.FileSize(*(ImportFolder / FileNameFBX)) != INDEX_NONE)
+			if (FileManager.FileSize(*(ImportFolder / FileNameFBX)) == INDEX_NONE)
 			{
 				FileManager.MakeDirectory(*ImportFolder, true);
 				if (FileManager.FileSize(*(ExportFolder / FileNameFBX)) > 0)
 				{
-					StaticMeshPaths.Add(ImportFolder);
 					FileManager.Copy(*(ImportFolder / FileNameFBX), *(ExportFolder / FileNameFBX));
 				}
 				else if (FileManager.FileSize(*(ExportFolder / FileNameOBJ)) > 0)
 				{
-					StaticMeshPaths.Add(ImportFolder);
 					ConvertOBJToFBX(ExportFolder / FileNameOBJ, ImportFolder / FileNameFBX);
 				}
 			}
