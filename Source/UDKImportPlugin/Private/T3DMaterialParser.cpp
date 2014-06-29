@@ -94,6 +94,18 @@ UMaterial*  T3DMaterialParser::ImportMaterial()
 		{
 			ImportExpression(&Material->Opacity);
 		}
+		else if (GetProperty(TEXT("OpacityMask="), Value))
+		{
+			ImportExpression(&Material->OpacityMask);
+		}
+		else if (IsProperty(Name, Value))
+		{
+			UProperty* Property = FindField<UProperty>(UMaterial::StaticClass(), *Name);
+			if (Property)
+			{
+				Property->ImportText(*Value, Property->ContainerPtrToValuePtr<uint8>(Material), 0, Material);
+			}
+		}
 	}
 
 	PrintMissingRequirements();
