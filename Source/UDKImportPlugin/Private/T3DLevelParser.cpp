@@ -503,7 +503,7 @@ void T3DLevelParser::ImportBrush()
 				Brush->BrushType = Brush_Subtract;
 			}
 		}
-		else if (IsActorLocation(Brush))
+		else if (IsActorLocation(Brush) || IsActorProperty(Brush))
 		{
 			continue;
 		}
@@ -514,18 +514,12 @@ void T3DLevelParser::ImportBrush()
 	}
 	
 	Model->Modify();
-
-	// Build bounds.
 	Model->BuildBound();
 
 	Brush->BrushComponent->Brush = Brush->Brush;
-
-	// Let the actor deal with having been imported, if desired.
 	Brush->PostEditImport();
-	// Notify actor its properties have changed.
 	Brush->PostEditChange();
-	Brush->SetFlags(RF_Standalone | RF_Public);
-
+	//Brush->SetFlags(RF_Standalone | RF_Public);
 }
 
 void T3DLevelParser::ImportPolyList(UPolys * Polys)
@@ -613,11 +607,12 @@ void T3DLevelParser::ImportPointLight()
 				JumpToEnd();
 			}
 		}
-		else if (IsActorLocation(PointLight) || IsActorRotation(PointLight))
+		else if (IsActorLocation(PointLight) || IsActorRotation(PointLight) || IsActorProperty(PointLight))
 		{
 			continue;
 		}
 	}
+	PointLight->PostEditChange();
 }
 
 void T3DLevelParser::ImportSpotLight()
@@ -664,7 +659,7 @@ void T3DLevelParser::ImportSpotLight()
 				JumpToEnd();
 			}
 		}
-		else if (IsActorLocation(SpotLight))
+		else if (IsActorLocation(SpotLight) || IsActorProperty(SpotLight))
 		{
 			continue;
 		}
@@ -680,6 +675,7 @@ void T3DLevelParser::ImportSpotLight()
 
 	// Because there is people that does this in UDK...
 	SpotLight->SetActorRotation((DrawScale3D.X * Rotator.Vector()).Rotation());
+	SpotLight->PostEditChange();
 }
 
 void T3DLevelParser::ImportStaticMeshActor()
@@ -708,7 +704,7 @@ void T3DLevelParser::ImportStaticMeshActor()
 				JumpToEnd();
 			}
 		}
-		else if (IsActorLocation(StaticMeshActor) || IsActorRotation(StaticMeshActor) || IsActorScale(StaticMeshActor))
+		else if (IsActorLocation(StaticMeshActor) || IsActorRotation(StaticMeshActor) || IsActorScale(StaticMeshActor) || IsActorProperty(StaticMeshActor))
 		{
 			continue;
 		}
@@ -724,6 +720,7 @@ void T3DLevelParser::ImportStaticMeshActor()
 		PrePivot = StaticMeshActor->GetActorRotation().RotateVector(PrePivot);
 		StaticMeshActor->SetActorLocation(StaticMeshActor->GetActorLocation() - PrePivot);
 	}
+	StaticMeshActor->PostEditChange();
 }
 
 USoundCue * T3DLevelParser::ImportSoundCue()

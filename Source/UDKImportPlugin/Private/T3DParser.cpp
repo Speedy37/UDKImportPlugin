@@ -1,5 +1,6 @@
 #include "UDKImportPluginPrivatePCH.h"
 #include "T3DParser.h"
+#include "Editor/UnrealEd/Public/Layers/ILayers.h"
 
 DEFINE_LOG_CATEGORY(UDKImportPluginLog);
 
@@ -108,10 +109,10 @@ bool T3DParser::IsEndObject()
 	return Line.Equals(TEXT("End Object"));
 }
 
-bool T3DParser::GetOneValueAfter(const FString &Key, FString &Value)
+bool T3DParser::GetOneValueAfter(const FString &Key, FString &Value, int32 maxindex)
 {
 	int32 start = Line.Find(Key, ESearchCase::CaseSensitive, ESearchDir::FromStart, 0);
-	if (start != -1)
+	if (start != -1 && start <= maxindex)
 	{
 		start += Key.Len();
 
@@ -152,16 +153,6 @@ bool T3DParser::GetOneValueAfter(const FString &Key, FString &Value)
 		}
 		Value = Line.Mid(start, Buffer - *Line - start);
 
-		return true;
-	}
-	return false;
-}
-
-bool T3DParser::GetProperty(const FString &Key, FString &Value)
-{
-	if (Line.StartsWith(Key, ESearchCase::CaseSensitive))
-	{
-		Value = Line.Mid(Key.Len());
 		return true;
 	}
 	return false;
@@ -358,6 +349,18 @@ bool T3DParser::IsActorScale(AActor * Actor)
 		FVector DrawScale3D;
 		ensure(DrawScale3D.InitFromString(Value));
 		Actor->SetActorScale3D(Actor->GetActorScale() * DrawScale3D);
+		return true;
+	}
+
+	return false;
+}
+
+bool T3DParser::IsActorProperty(AActor * Actor)
+{
+	FString Value;
+	if (GetProperty(TEXT("Layer="), Value))
+	{
+		GEditor->Layers->AddActorToLayer(Actor, FName(*Value));
 		return true;
 	}
 

@@ -55,9 +55,10 @@ protected:
 	bool IsActorLocation(AActor * Actor);
 	bool IsActorRotation(AActor * Actor);
 	bool IsActorScale(AActor * Actor);
+	bool IsActorProperty(AActor * Actor);
 
 	/// Value parsing
-	bool GetOneValueAfter(const FString &Key, FString &Value);
+	bool GetOneValueAfter(const FString &Key, FString &Value, int32 maxindex = MAX_int32);
 	bool GetProperty(const FString &Key, FString &Value);
 	bool ParseUDKRotation(const FString &InSourceString, FRotator &Rotator);
 	bool ParseFVector(const TCHAR* Stream, FVector& Value);
@@ -85,4 +86,9 @@ FORCEINLINE bool T3DParser::ParseRessourceUrl(const FString &Url, FRequirement &
 		return true;
 	}
 	return false;
+}
+
+FORCEINLINE bool T3DParser::GetProperty(const FString &Key, FString &Value)
+{
+	return GetOneValueAfter(Key, Value, 0);
 }
