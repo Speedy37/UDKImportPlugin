@@ -60,7 +60,7 @@ UMaterialInstanceConstant*  T3DMaterialInstanceConstantParser::ImportMaterialIns
 				FRequirement Requirement;
 				if (ParseRessourceUrl(Value, Requirement))
 				{
-					LevelParser->AddRequirement(Requirement, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetTextureParameterValue, &Parameter));
+					LevelParser->AddRequirement(Requirement, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetTextureParameterValue, MaterialInstanceConstant, ParameterIndex));
 				}
 				else
 				{

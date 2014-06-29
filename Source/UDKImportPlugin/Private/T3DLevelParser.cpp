@@ -812,8 +812,8 @@ void T3DLevelParser::SetParent(UObject * Object, UMaterialInstanceConstant * Mat
 	MaterialInstanceConstant->Parent = MaterialInterface;
 }
 
-void T3DLevelParser::SetTextureParameterValue(UObject * Object, FTextureParameterValue * Parameter)
+void T3DLevelParser::SetTextureParameterValue(UObject * Object, UMaterialInstanceConstant * MaterialInstanceConstant, int32 ParameterIndex)
 {
 	UTexture * Texture = Cast<UTexture>(Object);
-	Parameter->ParameterValue = Texture;
+	MaterialInstanceConstant->TextureParameterValues[ParameterIndex].ParameterValue = Texture;
 }

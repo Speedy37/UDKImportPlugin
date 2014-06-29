@@ -67,5 +67,5 @@ private:
 	void SetStaticMeshMaterialResolved(UObject * Object, UObject * Material, int32 MaterialIdx);
 	void SetTexture(UObject * Object, UMaterialExpressionTextureBase * MaterialExpression);
 	void SetParent(UObject * Object, UMaterialInstanceConstant * MaterialInstanceConstant);
-	void SetTextureParameterValue(UObject * Object, FTextureParameterValue * Parameter);
+	void SetTextureParameterValue(UObject * Object, UMaterialInstanceConstant * MaterialInstanceConstant, int32 ParameterIndex);
 };
