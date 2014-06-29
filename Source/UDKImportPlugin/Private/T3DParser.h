@@ -27,7 +27,7 @@ protected:
 	int32 RunUDK(const FString &CommandLine, FString &output);
 
 	/// Ressources requirements
-	TMap<FRequirement, TArray<UObjectDelegate>> Requirements;
+	TMap<FRequirement, TArray<UObjectDelegate> > Requirements;
 	TMap<FRequirement, UObject*> FixedRequirements;
 	bool ConvertOBJToFBX(const FString &ObjFileName, const FString &FBXFilename);
 	void AddRequirement(const FString &UDKRequiredObjectName, UObjectDelegate Action);
