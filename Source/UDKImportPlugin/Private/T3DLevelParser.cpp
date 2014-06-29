@@ -396,13 +396,10 @@ void T3DLevelParser::ExportTextureAssets()
 			FString FileName = Requirement.Name + TEXT(".TGA");
 			ExportPackage(Requirement.Package, EExportType::Texture2D, ExportFolder);
 
-			if (FileManager.FileSize(*(ImportFolder / FileName)) == INDEX_NONE)
+			FileManager.MakeDirectory(*ImportFolder, true);
+			if (FileManager.FileSize(*(ExportFolder / FileName)) > 0)
 			{
-				FileManager.MakeDirectory(*ImportFolder, true);
-				if (FileManager.FileSize(*(ExportFolder / FileName)) > 0)
-				{
-					FileManager.Copy(*(ImportFolder / FileName), *(ExportFolder / FileName));
-				}
+				FileManager.Copy(*(ImportFolder / FileName), *(ExportFolder / FileName));
 			}
 		}
 	}
@@ -435,17 +432,14 @@ void T3DLevelParser::ExportStaticMeshAssets()
 			FString FileNameFBX = Requirement.Name + TEXT(".FBX");
 			ExportPackage(Requirement.Package, EExportType::StaticMesh, ExportFolder);
 
-			if (FileManager.FileSize(*(ImportFolder / FileNameFBX)) == INDEX_NONE)
+			FileManager.MakeDirectory(*ImportFolder, true);
+			if (FileManager.FileSize(*(ExportFolder / FileNameFBX)) > 0)
 			{
-				FileManager.MakeDirectory(*ImportFolder, true);
-				if (FileManager.FileSize(*(ExportFolder / FileNameFBX)) > 0)
-				{
-					FileManager.Copy(*(ImportFolder / FileNameFBX), *(ExportFolder / FileNameFBX));
-				}
-				else if (FileManager.FileSize(*(ExportFolder / FileNameOBJ)) > 0)
-				{
-					ConvertOBJToFBX(ExportFolder / FileNameOBJ, ImportFolder / FileNameFBX);
-				}
+				FileManager.Copy(*(ImportFolder / FileNameFBX), *(ExportFolder / FileNameFBX));
+			}
+			else if (FileManager.FileSize(*(ExportFolder / FileNameOBJ)) > 0)
+			{
+				ConvertOBJToFBX(ExportFolder / FileNameOBJ, ImportFolder / FileNameFBX);
 			}
 		}
 	}
@@ -519,7 +513,6 @@ void T3DLevelParser::ImportBrush()
 	Brush->BrushComponent->Brush = Brush->Brush;
 	Brush->PostEditImport();
 	Brush->PostEditChange();
-	//Brush->SetFlags(RF_Standalone | RF_Public);
 }
 
 void T3DLevelParser::ImportPolyList(UPolys * Polys)
