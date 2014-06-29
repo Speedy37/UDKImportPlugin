@@ -17,7 +17,6 @@ protected:
 	static float IntensityMultiplier;
 
 	T3DParser(const FString &UdkPath, const FString &TmpPath);
-	T3DParser(T3DParser * ParentParser);
 
 	int32 StatusNumerator, StatusDenominator;
 

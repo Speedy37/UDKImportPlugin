@@ -25,7 +25,8 @@ private:
 			StaticMesh,
 			Material,
 			MaterialInstanceConstant,
-			Texture2D
+			Texture2D,
+			Texture2DInfo
 		};
 	};
 	FString ExportFolderFor(EExportType::Type Type);

@@ -47,11 +47,20 @@ UMaterial*  T3DMaterialParser::ImportMaterial()
 	{
 		if (IsBeginObject(ClassName))
 		{
-			Class = (UClass*)StaticFindObject(UClass::StaticClass(), ANY_PACKAGE, *ClassName, true);
+			if (ClassName == TEXT("MaterialExpressionFlipBookSample"))
+			{
+				Class = UMaterialExpressionTextureSample::StaticClass();
+			}
+			else
+			{
+				Class = (UClass*)StaticFindObject(UClass::StaticClass(), ANY_PACKAGE, *ClassName, true);
+			}
+
 			if (Class)
 			{
 				ensure(GetOneValueAfter(TEXT(" Name="), Name));
-				UMaterialExpression* MaterialExpression = ImportMaterialExpression(Class);
+				FRequirement TextureRequirement;
+				UMaterialExpression* MaterialExpression = ImportMaterialExpression(Class, TextureRequirement);
 				UMaterialExpressionComment * MaterialExpressionComment = Cast<UMaterialExpressionComment>(MaterialExpression);
 				if (MaterialExpressionComment)
 				{
@@ -63,6 +72,11 @@ UMaterial*  T3DMaterialParser::ImportMaterial()
 				{
 					Material->Expressions.Add(MaterialExpression);
 					FixRequirement(FString::Printf(TEXT("%s'%s'"), *ClassName, *Name), MaterialExpression);
+				}
+
+				if (ClassName == TEXT("MaterialExpressionFlipBookSample"))
+				{
+					ImportMaterialExpressionFlipBookSample((UMaterialExpressionTextureSample *)MaterialExpression, TextureRequirement);
 				}
 			}
 			else
@@ -113,7 +127,7 @@ UMaterial*  T3DMaterialParser::ImportMaterial()
 	return Material;
 }
 
-UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class)
+UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class, FRequirement &TextureRequirement)
 {
 	if (!Class->IsChildOf(UMaterialExpression::StaticClass()))
 		return NULL;
@@ -124,10 +138,9 @@ UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class)
 	{
 		if (GetProperty(TEXT("Texture="), Value))
 		{
-			FRequirement Requirement;
-			if (ParseRessourceUrl(Value, Requirement))
+			if (ParseRessourceUrl(Value, TextureRequirement))
 			{
-				LevelParser->AddRequirement(Requirement, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetTexture, (UMaterialExpressionTextureBase*)MaterialExpression));
+				LevelParser->AddRequirement(TextureRequirement, UObjectDelegate::CreateRaw(LevelParser, &T3DLevelParser::SetTexture, (UMaterialExpressionTextureBase*)MaterialExpression));
 			}
 			else
 			{
@@ -181,6 +194,56 @@ UMaterialExpression* T3DMaterialParser::ImportMaterialExpression(UClass * Class)
 	MaterialExpression->MaterialExpressionEditorX = -MaterialExpression->MaterialExpressionEditorX;
 
 	return MaterialExpression;
+}
+
+void T3DMaterialParser::ImportMaterialExpressionFlipBookSample(UMaterialExpressionTextureSample * Expression, FRequirement &TextureRequirement)
+{
+	UMaterialExpressionMaterialFunctionCall * MEFunction = ConstructObject<UMaterialExpressionMaterialFunctionCall>(UMaterialExpressionMaterialFunctionCall::StaticClass(), Material);
+	UMaterialExpressionConstant * MECRows = ConstructObject<UMaterialExpressionConstant>(UMaterialExpressionConstant::StaticClass(), Material);
+	UMaterialExpressionConstant * MECCols = ConstructObject<UMaterialExpressionConstant>(UMaterialExpressionConstant::StaticClass(), Material);
+	MEFunction->MaterialExpressionEditorY = Expression->MaterialExpressionEditorY;
+	MECRows->MaterialExpressionEditorY = MEFunction->MaterialExpressionEditorY;
+	MECCols->MaterialExpressionEditorY = MECRows->MaterialExpressionEditorY + 64;
+
+	MEFunction->MaterialExpressionEditorX = Expression->MaterialExpressionEditorX - 304;
+	MECRows->MaterialExpressionEditorX = MEFunction->MaterialExpressionEditorX - 80;
+	MECCols->MaterialExpressionEditorX = MECRows->MaterialExpressionEditorX;
+
+	MECRows->bCollapsed = true;
+	MECCols->bCollapsed = true;
+
+	MEFunction->SetMaterialFunction(NULL, NULL, LoadObject<UMaterialFunction>(NULL, TEXT("/Engine/Functions/Engine_MaterialFunctions02/Texturing/FlipBook.FlipBook")));
+
+	MEFunction->FunctionInputs[1].Input.Expression = MECRows;
+	MEFunction->FunctionInputs[2].Input.Expression = MECCols;
+
+	if (Expression->Coordinates.Expression)
+	{
+		MEFunction->FunctionInputs[4].Input.Expression = Expression->Coordinates.Expression;
+	}
+
+	FString ExportFolder;
+	FString FileName = TextureRequirement.Name + TEXT(".T3D");
+	LevelParser->ExportPackage(TextureRequirement.Package, T3DLevelParser::EExportType::Texture2DInfo, ExportFolder);
+	if (FFileHelper::LoadFileToString(Line, *(ExportFolder / FileName)))
+	{
+		FString Value;
+		if (GetOneValueAfter(TEXT("HorizontalImages="), Value))
+		{
+			MECCols->R = FCString::Atof(*Value);
+		}
+		if (GetOneValueAfter(TEXT("VerticalImages="), Value))
+		{
+			MECRows->R = FCString::Atof(*Value);
+		}
+	}
+
+	Expression->Coordinates.OutputIndex = 2;
+	Expression->Coordinates.Expression = MEFunction;
+
+	Material->Expressions.Add(MECRows);
+	Material->Expressions.Add(MECCols);
+	Material->Expressions.Add(MEFunction);
 }
 
 void T3DMaterialParser::ImportExpression(FExpressionInput * ExpressionInput)

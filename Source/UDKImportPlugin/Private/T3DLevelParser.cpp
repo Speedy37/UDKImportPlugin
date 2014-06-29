@@ -104,6 +104,7 @@ FString T3DLevelParser::ExportFolderFor(EExportType::Type Type)
 	case EExportType::StaticMesh: Directory = TEXT("ExportedMeshes"); break;
 	case EExportType::MaterialInstanceConstant: Directory = TEXT("ExportedMaterialInstances"); break;
 	case EExportType::Texture2D: Directory = TEXT("ExportedTextures"); break;
+	case EExportType::Texture2DInfo: Directory = TEXT("ExportedTexturesT3D"); break;
 	default: Directory = TEXT("ExportedUnknowns"); break;
 	}
 
@@ -157,6 +158,7 @@ bool T3DLevelParser::ExportPackage(const FString &Package, EExportType::Type Typ
 		case EExportType::StaticMesh: Command = TEXT("StaticMesh OBJ"); break;
 		case EExportType::MaterialInstanceConstant: Command = TEXT("MaterialInstanceConstant T3D"); break;
 		case EExportType::Texture2D: Command = TEXT("Texture TGA"); break;
+		case EExportType::Texture2DInfo: Command = TEXT("Texture T3D"); break;
 		default: return false;
 		}
 
@@ -205,7 +207,7 @@ void T3DLevelParser::ResolveRequirements()
 				FixRequirement(Requirement, Object);
 			}
 		}
-		else if (Requirement.Type == TEXT("Texture2D"))
+		else if (Requirement.Type.StartsWith(TEXT("Texture")))
 		{
 			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/%s/Textures/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
 			UTexture2D * Texture2D = FindObject<UTexture2D>(NULL, *ObjectPath);
@@ -381,7 +383,7 @@ void T3DLevelParser::ExportTextureAssets()
 	{
 		const FRequirement &Requirement = Iter.Key();
 
-		if (Requirement.Type == TEXT("Texture2D"))
+		if (Requirement.Type.StartsWith(TEXT("Texture")))
 		{
 			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/%s/Textures/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
 			UTexture2D * Texture2D = LoadObject<UTexture2D>(NULL, *ObjectPath, NULL, LOAD_NoWarn | LOAD_Quiet);

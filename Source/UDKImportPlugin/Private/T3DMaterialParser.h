@@ -12,12 +12,13 @@ public:
 
 private:
 	T3DLevelParser * LevelParser;
-
+	
 	// T3D Parsing
 	UMaterial * ImportMaterial();
 	UMaterial * Material;
 
-	UMaterialExpression* ImportMaterialExpression(UClass * Class);
+	UMaterialExpression* ImportMaterialExpression(UClass * Class, FRequirement &TextureRequirement);
 	void ImportExpression(FExpressionInput * ExpressionInput);
+	void ImportMaterialExpressionFlipBookSample(UMaterialExpressionTextureSample * Expression, FRequirement &TextureRequirement);
 	void SetExpression(UObject * Object, FExpressionInput * ExpressionInput);
 };
