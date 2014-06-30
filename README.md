@@ -49,3 +49,10 @@ The tool doesn't create a new map, so don't forget to create a new empty map bef
 The temporary directory is reused, you don't need and don't want to make it empty again unless you have made changes in your UDK packages or after a plugin updates. Don't forget to save your exported FBX staticmeshes to limit the time lost updating the exported FBXs.
 
 You should export the staticmesh to FBX using the UDK Content Browser. An simple keyboard macro : {TAB}{f}{ENTER} can help you do this job.
+
+
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
