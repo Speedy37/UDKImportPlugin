@@ -1,6 +1,7 @@
 #include "UDKImportPluginPrivatePCH.h"
 #include "T3DMaterialParser.h"
 #include "T3DLevelParser.h"
+#include "Materials/MaterialFunction.h"
 
 T3DMaterialParser::T3DMaterialParser(T3DLevelParser * ParentParser, const FString &Package) : T3DParser(ParentParser->UdkPath, ParentParser->TmpPath)
 {

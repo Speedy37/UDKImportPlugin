@@ -1,5 +1,7 @@
 #include "UDKImportPluginPrivatePCH.h"
 #include "Editor/UnrealEd/Public/BSPOps.h"
+#include "Runtime/Engine/Public/ComponentReregisterContext.h"
+#include "Runtime/Engine/Classes/Sound/SoundNode.h"
 #include "T3DLevelParser.h"
 #include "T3DMaterialParser.h"
 #include "T3DMaterialInstanceConstantParser.h"
@@ -385,14 +387,6 @@ void T3DLevelParser::ExportTextureAssets()
 
 		if (Requirement.Type.StartsWith(TEXT("Texture")))
 		{
-			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/%s/Textures/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
-			UTexture2D * Texture2D = LoadObject<UTexture2D>(NULL, *ObjectPath, NULL, LOAD_NoWarn | LOAD_Quiet);
-			if (Texture2D)
-			{
-				FixRequirement(Requirement, Texture2D);
-				continue;
-			}
-
 			FString ExportFolder;
 			FString ImportFolder = TmpPath / TEXT("UDK") / Requirement.Package / TEXT("Textures");
 			FString FileName = Requirement.Name + TEXT(".TGA");
@@ -420,14 +414,6 @@ void T3DLevelParser::ExportStaticMeshAssets()
 
 		if (Requirement.Type == TEXT("StaticMesh"))
 		{
-			FString ObjectPath = FString::Printf(TEXT("/Game/UDK/%s/Meshes/%s.%s"), *Requirement.Package, *Requirement.Name, *Requirement.Name);
-			UObject * Object = LoadObject<UStaticMesh>(NULL, *ObjectPath, NULL, LOAD_NoWarn | LOAD_Quiet);
-			if (Object)
-			{
-				FixRequirement(Requirement, Object);
-				continue;
-			}
-
 			FString ExportFolder;
 			FString ImportFolder = TmpPath / TEXT("UDK") / Requirement.Package / TEXT("Meshes");
 			FString FileNameOBJ = Requirement.Name + TEXT(".OBJ");
